@@ -1,0 +1,16 @@
+Violet AI - Render deployment
+
+1) Upload this project to a GitHub repository.
+2) In Render choose New -> Web Service and connect the repository.
+3) Runtime: Node.
+4) Build Command: npm install
+5) Start Command: npm start
+6) Plan: Free
+7) Add environment variable:
+   OPENROUTER_API_KEY = your OpenRouter key
+8) Deploy.
+
+After deployment Render gives a URL such as https://violet-ai-xxxx.onrender.com
+Open that URL on the phone. The laptop does not need to stay on.
+
+IMPORTANT: Never put the OpenRouter key into violet_ai_frontend.html or commit .env to GitHub.

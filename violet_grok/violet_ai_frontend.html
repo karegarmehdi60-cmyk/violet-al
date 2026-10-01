@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Violet AI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--bg:#090711;--panel:#100d1c;--panel2:#171128;--line:rgba(199,174,255,.13);--purple:#9563ff;--lav:#c7a8ff;--text:#f7f3ff;--muted:#a69bbd}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;overflow:hidden}
+body:before{content:"";position:fixed;inset:-20%;background:radial-gradient(ellipse at 15% 10%,rgba(103,49,194,.23),transparent 35%),radial-gradient(ellipse at 90% 80%,rgba(77,36,145,.19),transparent 36%);pointer-events:none}
+button,input,textarea{font:inherit}button{cursor:pointer}
+.screen{position:relative;z-index:1;min-height:100vh}
+.hidden{display:none!important}
+#signup{display:grid;place-items:center;padding:24px}
+.signup-card{width:min(430px,100%);padding:38px 34px 32px;border:1px solid var(--line);border-radius:28px;background:linear-gradient(145deg,rgba(29,21,48,.96),rgba(14,11,25,.96));box-shadow:0 28px 100px #0008;animation:rise .7s cubic-bezier(.2,.8,.2,1) both;position:relative;overflow:hidden}
+.signup-card:before{content:"";position:absolute;width:250px;height:250px;top:-150px;right:-70px;border-radius:50%;background:#8c4dff30;filter:blur(6px)}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.2px}
+.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#b18aff,#6930d5);box-shadow:0 8px 25px #8248ed55}
+.logo svg{width:24px}
+.signup-card h1{font-size:27px;margin:30px 0 8px;letter-spacing:-.8px}.sub{color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 27px}
+.field-label{font-size:12px;color:#d8cbed;font-weight:600;display:block;margin:0 0 9px}
+.textbox{width:100%;background:#0c0915;border:1px solid #ffffff19;border-radius:13px;padding:15px 14px;color:white;outline:none;transition:.2s}
+.textbox:focus{border-color:#a47aff;box-shadow:0 0 0 3px #9460ff20}
+.primary{width:100%;border:0;border-radius:13px;padding:14px 16px;color:white;font-weight:700;background:linear-gradient(100deg,#8e4fff,#a779ff);box-shadow:0 9px 26px #8245e53b;transition:.2s;margin-top:16px}
+.primary:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.or{display:flex;align-items:center;gap:12px;color:#827794;font-size:11px;margin:21px 0}.or:before,.or:after{content:"";height:1px;background:#ffffff14;flex:1}
+.social{display:flex;gap:10px}.social button{flex:1;border:1px solid #ffffff19;background:#ffffff06;color:#dcd4e9;border-radius:12px;padding:12px 8px;font-size:12px;font-weight:600;opacity:.75}
+.social button span{font-size:15px;margin-right:6px}.fine{font-size:10px;color:#716881;text-align:center;margin:23px 0 0}
+#app{display:flex;height:100vh}
+.sidebar{width:278px;flex-shrink:0;background:rgba(13,10,22,.9);border-right:1px solid var(--line);padding:19px 14px;display:flex;flex-direction:column;transition:transform .25s;z-index:5}
+.side-top{display:flex;align-items:center;justify-content:space-between;padding:0 5px 23px}
+.brand.small{font-size:14px}.brand.small .logo{width:34px;height:34px;border-radius:11px}
+.iconbtn{width:36px;height:36px;border:1px solid transparent;background:transparent;color:#b9accf;border-radius:11px;display:grid;place-items:center}.iconbtn:hover{background:#ffffff0c;color:white}
+.newchat{display:flex;align-items:center;gap:10px;width:100%;padding:12px 13px;border-radius:12px;background:#8e57f51a;border:1px solid #a77bff30;color:#e8dcff;text-align:left;font-size:12px;font-weight:600}
+.section-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#746984;margin:26px 9px 10px}
+.chat-list{overflow:auto;display:flex;flex-direction:column;gap:4px}
+.chat-item{border:0;background:transparent;color:#b7acc9;text-align:left;padding:11px 10px;border-radius:10px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-item:hover,.chat-item.active{background:#ffffff0b;color:#fff}
+.side-bottom{margin-top:auto;border-top:1px solid var(--line);padding:15px 5px 0;display:flex;align-items:center;gap:10px}
+.avatar{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#aa80ff,#6333b6);font-size:12px;font-weight:700}
+.profile-name{font-size:11px;font-weight:600}.profile-hint{font-size:10px;color:#81758f;margin-top:3px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.topbar{height:65px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid #ffffff0a}
+.top-left{display:flex;align-items:center;gap:10px}.mobile-menu{display:none}
+.model-pill{font-size:11px;color:#c7b5e5;background:#ffffff08;border:1px solid var(--line);padding:7px 10px;border-radius:20px}
+.more-wrap{position:relative}.menu{position:absolute;top:44px;left:0;width:260px;max-height:65vh;overflow:auto;padding:7px;background:#1a1428;border:1px solid #ffffff19;border-radius:13px;box-shadow:0 16px 40px #0009;display:none;z-index:10;animation:fade .15s}.menu.open{display:block}
+.menu button{width:100%;border:0;background:transparent;color:#ded4ee;text-align:left;padding:11px 10px;border-radius:8px;font-size:12px}.menu button:hover{background:#ffffff0c}
+.chat-area{flex:1;overflow:auto;padding:26px 20px 16px;display:flex;flex-direction:column;align-items:center}
+.welcome{margin:auto 0;max-width:620px;text-align:center;animation:rise .8s both}
+.welcome-orb{width:68px;height:68px;margin:0 auto 24px;border-radius:23px;display:grid;place-items:center;background:radial-gradient(circle at 35% 25%,#d2baff,#8750ee 53%,#4b238e);box-shadow:0 0 50px #8a4eff40;animation:float 4s ease-in-out infinite}
+.welcome h2{font-size:clamp(25px,4vw,35px);letter-spacing:-1.3px;margin:0 0 12px}.welcome h2 em{font-style:normal;background:linear-gradient(90deg,#d5bcff,#9560ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.welcome p{color:#a69bb9;font-size:13px;line-height:1.7;margin:0 auto;max-width:420px}
+.messages{width:min(760px,100%);display:flex;flex-direction:column;gap:18px;padding:14px 0 24px}
+.message{display:flex;gap:12px;align-items:flex-start;animation:messageIn .42s cubic-bezier(.2,.8,.2,1) both}.message.user .bubble{animation:bubblePop .32s cubic-bezier(.2,.8,.2,1) both}.message.user{flex-direction:row-reverse}
+.bubble{max-width:min(78%,620px);padding:12px 15px;border-radius:16px;background:#171225;border:1px solid #ffffff0d;font-size:13px;line-height:1.65;white-space:pre-wrap}
+.user .bubble{background:#6f42ba38;border-color:#a67aff2a;border-top-right-radius:5px}.assistant .bubble{border-top-left-radius:5px}
+.msg-avatar{width:27px;height:27px;flex-shrink:0;border-radius:9px;display:grid;place-items:center;background:#8e58ec;color:white;font-size:11px}
+.user .msg-avatar{background:#2b223a;color:#d5c4f3}
+.composer-wrap{width:100%;padding:10px 20px 20px}
+.composer{width:min(760px,100%);margin:0 auto;border:1px solid #ffffff1c;background:#151020;border-radius:18px;padding:10px 11px 9px;box-shadow:0 12px 40px #0005;transition:.2s}
+.composer:focus-within{border-color:#9869e855;box-shadow:0 0 0 3px #8c51e910}
+.composer textarea{display:block;width:100%;min-height:32px;max-height:130px;resize:none;background:transparent;border:0;outline:0;color:white;padding:5px 7px;font-size:13px;line-height:1.5}
+.composer textarea::placeholder{color:#82788f}
+.composer-bottom{display:flex;align-items:center;justify-content:space-between;padding:4px 1px 0}
+.composer-note{font-size:10px;color:#746a83}.send{border:0;width:32px;height:32px;border-radius:10px;background:#9861f5;color:white;display:grid;place-items:center}.send:disabled{opacity:.4;cursor:default}
+.notice{font-size:10px;color:#6f657d;text-align:center;margin:9px auto 0}
+@keyframes messageIn{from{opacity:0;transform:translateY(13px) scale(.985);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}@keyframes bubblePop{0%{transform:scale(.94)}70%{transform:scale(1.015)}100%{transform:scale(1)}}.typing{display:flex;gap:5px;align-items:center;padding:5px 2px}.typing i{width:6px;height:6px;border-radius:50%;background:#b99aff;animation:typingDot 1s infinite ease-in-out}.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-5px);opacity:1}}@keyframes rise{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@media(max-width:700px){.sidebar{position:fixed;inset:0 auto 0 0;width:275px;transform:translateX(-105%);box-shadow:20px 0 60px #0008}.sidebar.show{transform:translateX(0)}.mobile-menu{display:grid}.topbar{padding:0 13px}.chat-area{padding:18px 13px 10px}.composer-wrap{padding:8px 12px 14px}.signup-card{padding:30px 24px}}
+
+/* Glass finish limited to navigation and chat surfaces */
+.sidebar,.chat-panel,.topbar,.composer,.bubble,.chat-item,.more-menu,.history-menu{backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.sidebar{background:rgba(17,13,30,.68)!important;border-color:rgba(210,190,255,.22)!important}
+.chat-panel{background:rgba(15,11,27,.54)!important;border:1px solid rgba(210,190,255,.16)}
+.topbar,.composer{background:rgba(20,15,34,.56)!important;border-color:rgba(210,190,255,.2)!important}
+.message .bubble{background:rgba(139,105,190,.12)!important;border:1px solid rgba(220,202,255,.17);box-shadow:0 8px 30px rgba(0,0,0,.12)}
+.message.user .bubble{background:rgba(132,82,220,.23)!important;border-color:rgba(197,163,255,.3)}
+.chat-item{background:rgba(255,255,255,.035)!important;border:1px solid rgba(220,202,255,.09)}
+.chat-item.active{background:rgba(149,99,255,.18)!important;border-color:rgba(197,168,255,.28)}
+
+
+/* Full glass styling across the whole Violet AI interface */
+body{background:radial-gradient(ellipse at 12% 8%,#3d226c 0%,transparent 38%),radial-gradient(ellipse at 90% 85%,#211b51 0%,transparent 42%),#080711}
+.signup-card,.sidebar,.topbar,.chat-area,.composer,.menu,.bubble,.newchat,.textbox,.social button,.model-pill,.chat-item,.iconbtn{backdrop-filter:blur(24px) saturate(145%);-webkit-backdrop-filter:blur(24px) saturate(145%)}
+.signup-card{background:linear-gradient(135deg,rgba(47,32,76,.52),rgba(18,14,35,.43))!important;border:1px solid rgba(226,210,255,.28);box-shadow:0 24px 80px rgba(0,0,0,.36),inset 0 1px rgba(255,255,255,.12)}
+.sidebar{background:rgba(17,13,30,.48)!important;border-right-color:rgba(220,205,255,.22)!important}
+.topbar{background:rgba(15,12,28,.35)!important;border-bottom-color:rgba(220,205,255,.18)!important}
+.chat-area{background:rgba(9,7,17,.13)}
+.composer{background:rgba(27,20,43,.4)!important;border-color:rgba(225,210,255,.28)!important;box-shadow:0 14px 42px rgba(0,0,0,.25),inset 0 1px rgba(255,255,255,.08)}
+.menu{background:rgba(27,20,45,.78)!important;border-color:rgba(225,210,255,.26)!important;box-shadow:0 18px 48px rgba(0,0,0,.38)}
+.bubble{background:rgba(160,130,205,.13)!important;border-color:rgba(230,216,255,.2)!important}
+.textbox{background:rgba(10,8,20,.42)!important;border-color:rgba(225,210,255,.2)!important}
+.newchat{background:rgba(142,87,245,.18)!important;border-color:rgba(167,123,255,.34)!important}
+.menu-divider{height:1px;background:rgba(255,255,255,.13);margin:6px 5px}
+.menu button.logout-item{color:#ff5d69;font-weight:700}
+.menu button.logout-item:hover{background:rgba(255,65,82,.13);color:#ff7b85}
+
+
+/* Animated star field on the dark edges; original gradient/background remains unchanged. */
+body:after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.9;
+ background-image:
+ radial-gradient(2px 2px at 3% 12%,#fff 55%,transparent 100%),
+ radial-gradient(2px 2px at 9% 73%,rgba(238,229,255,.98) 55%,transparent 100%),
+ radial-gradient(2.5px 2.5px at 16% 36%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 23% 89%,rgba(221,207,255,.98) 55%,transparent 100%),
+ radial-gradient(2px 2px at 31% 19%,#fff 55%,transparent 100%),
+ radial-gradient(2px 2px at 38% 58%,rgba(238,229,255,.98) 55%,transparent 100%),
+ radial-gradient(2.5px 2.5px at 46% 8%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 53% 81%,rgba(221,207,255,.98) 55%,transparent 100%),
+ radial-gradient(2px 2px at 61% 29%,#fff 55%,transparent 100%),
+ radial-gradient(2px 2px at 69% 66%,rgba(238,229,255,.98) 55%,transparent 100%),
+ radial-gradient(2.5px 2.5px at 77% 11%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 84% 47%,rgba(221,207,255,.98) 55%,transparent 100%),
+ radial-gradient(2px 2px at 92% 84%,#fff 55%,transparent 100%),
+ radial-gradient(2px 2px at 98% 25%,rgba(238,229,255,.98) 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 6% 44%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 28% 52%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 48% 93%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 72% 39%,#fff 55%,transparent 100%),
+ radial-gradient(1.5px 1.5px at 89% 5%,#fff 55%,transparent 100%);
+ background-size:100% 100%;
+ -webkit-mask-image:radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.35) 52%,#000 88%);
+ mask-image:radial-gradient(ellipse at center,transparent 25%,rgba(0,0,0,.35) 52%,#000 88%);
+ animation:starTwinkle 2.8s ease-in-out infinite alternate,starFloat 15s ease-in-out infinite alternate;}
+.screen{z-index:1}
+@keyframes starFloat{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-10px,8px,0) scale(1.02)}}
+@keyframes starTwinkle{0%{opacity:.35}45%{opacity:1}100%{opacity:.72}}
+@media(prefers-reduced-motion:reduce){body:after{animation:none}}
+</style>
+</head>
+<body>
+<section id="signup" class="screen">
+ <div class="signup-card">
+  <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/><path d="m18.5 2 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" fill="white"/></svg></div>Violet AI</div>
+  <h1>Welcome aboard</h1><p class="sub">Your space for ideas, questions, and conversations. Let’s get you started.</p>
+  <form id="signupForm">
+   <label class="field-label" for="username">Username</label>
+   <input class="textbox" id="username" maxlength="32" placeholder="e.g. Maziar" autocomplete="nickname" required>
+   <button class="primary" type="submit">Continue</button>
+  </form>
+  <div class="or">OR CONTINUE WITH</div>
+  <div class="social"><button type="button" title="Demo only"><span>G</span>Google</button><button type="button" title="Demo only"><span>f</span>Facebook</button></div>
+  <p class="fine">By continuing, you agree to keep things kind and curious.</p>
+ </div>
+</section>
+<section id="app" class="screen hidden">
+ <aside class="sidebar" id="sidebar">
+  <div class="side-top"><div class="brand small"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/></svg></div>Violet AI</div><div class="more-wrap"><button class="iconbtn" id="moreBtn" aria-label="More options"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button><div class="menu" id="moreMenu"><button type="button" id="menuNewChat">＋ &nbsp; New chat</button><div class="section-label" style="margin:8px 10px">Saved chats</div><div id="historyMenu"></div><div class="menu-divider"></div><button type="button" class="logout-item" id="logoutBtn">Log out</button></div></div><button class="iconbtn" id="closeSide" aria-label="Close sidebar">✕</button></div>
+  <button class="newchat" id="newChat"><span>＋</span> New chat</button>
+  <div class="section-label">Recent chats</div>
+  <div class="chat-list" id="chatList"></div>
+  <div class="side-bottom"><div class="avatar" id="userAvatar">M</div><div><div class="profile-name" id="profileName">Maziar</div><div class="profile-hint">Personal workspace</div></div></div>
+ </aside>
+ <main class="main">
+  <header class="topbar">
+   <div class="top-left"><button class="iconbtn mobile-menu" id="openSide" aria-label="Open menu">☰</button><span class="model-pill">✦ &nbsp; Violet Assistant</span></div>
+   <button class="iconbtn" id="newTop" title="New chat">＋</button>
+  </header>
+  <div class="chat-area" id="chatArea">
+   <div class="welcome" id="welcome"><div class="welcome-orb"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/><path d="m18.5 2 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" fill="white"/></svg></div><h2>Hello, <em id="welcomeName">Maziar</em></h2><p>Welcome to your own little corner of the internet. What would you like to explore today?</p></div>
+   <div class="messages" id="messages"></div>
+  </div>
+  <div class="composer-wrap"><div class="composer"><textarea id="prompt" rows="1" placeholder="Message Violet AI..." aria-label="Message"></textarea><div class="composer-bottom"><span class="composer-note">Enter to send · Shift + Enter for a new line</span><button class="send" id="sendBtn" disabled aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5m-6 6 6-6 6 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><div class="notice">Violet AI · Connected to OpenRouter</div></div>
+ </main>
+</section>
+<script>
+const $=id=>document.getElementById(id);
+const STORE='violet_ai_demo_v1';
+
+const BOT_MEMORY_KEY='violet_ai_bot_memory_v1';
+function loadBotMemory(){try{return JSON.parse(localStorage.getItem(BOT_MEMORY_KEY)||'{"name":null,"age":null,"vocabulary":{},"feelings":{}}')}catch(e){return {name:null,age:null,vocabulary:{},feelings:{}}}}
+function saveBotMemory(m){localStorage.setItem(BOT_MEMORY_KEY,JSON.stringify(m))}
+const botJokes=[
+"چرا برنامه‌نویس گم نمی‌شه؟ چون مسیرشو با import پیدا می‌کنه!",
+"یه بیت رفت تو صف چون دستورش if بود!",
+"برنامه‌نویسا وقتی خواب می‌رن: return to bed()",
+"گربه‌ی برنامه‌نویس همیشه دنبال mouse می‌گرده!",
+"هکر تو جنگل گم نمی‌شه چون همه چی رو track می‌کنه!"
+];
+const botStories=[
+"روزی یه ربات عاشق کد شد و خودش رو دیباگ کرد! 🤖❤️",
+"یه ماشین حرف‌زن مسابقه رو با یه شوخی برد! 🚗😂",
+"لاک‌پشتی کند ولی مصمم شد قهرمان توسعه‌دهنده‌ها! 🐢💻",
+"تو آینده، یه ربات شد استاد شادی برای همه! 🧠💙",
+"یه شب یه چیپ از آسمون افتاد و خاطرات یه ربات رو زنده کرد 🌌"
+];
+const botDefaults={
+"سلام":["سلام {name} عزیز!","درود بر تو! 🤖","سلام رفیق!"],
+"خوبی":["من خوبم، تو چطوری؟","همیشه آماده‌ام برای گپ! 😊"],
+"اسمت چیه":["من یه رباتم، ساختهٔ دست مازیار 😎"],
+"دوست دارم":["منم تو رو دوست دارم ❤️","این عشق دوطرفه‌ست!"],
+"سازنده":["سازندهٔ من یه نابغه‌ست: مازیار 💻"]
+};
+function botReply(message){
+ const msg=message.trim(), low=msg.toLowerCase(), memory=loadBotMemory();
+ memory.profile=memory.profile||{}; memory.vocabulary=memory.vocabulary||{}; memory.feelings=memory.feelings||{};
+ const name=memory.name||state.name||"دوست من";
+ // آموزش پاسخ‌های جدید: پاسخ کاربر در حافظهٔ محلی همین مرورگر ذخیره می‌شود.
+ if(memory.pendingLearn){
+   if(/^(بله|آره|اره|بله یاد میدم|یاد میدم|حتما)$/i.test(msg)){
+     memory.pendingLearn.accepted=true;saveBotMemory(memory);
+     return "عالیه! حالا جواب درست این سؤال رو برام بنویس تا یاد بگیرم. 💜";
+   }
+   if(/^(نه|خیر|نمیخوام|بیخیال)$/i.test(msg)){
+     memory.pendingLearn=null;saveBotMemory(memory);
+     return "باشه، اشکالی نداره! هر وقت خواستی می‌تونی یادم بدی. 😊";
+   }
+   if(memory.pendingLearn.accepted){
+     const q=memory.pendingLearn.question;
+     memory.vocabulary[q]=msg;memory.pendingLearn=null;saveBotMemory(memory);
+     return "یاد گرفتم و ذخیره کردم! دفعهٔ بعد که همین سؤال رو بپرسی، همین جواب رو می‌دم. 💾";
+   }
+ }
+ const remember=msg.match(/(?:یادت باشه|ذخیره کن|به خاطر بسپار)\s*(?:که)?\s*(?:من\s*)?(.+?)\s*(?:=|:|：|هستم|ام)\s*(.+)$/);
+ if(remember){let k=remember[1].trim(),v=remember[2].trim();if(k&&v){memory.profile[k]=v;saveBotMemory(memory);return `حتماً! ذخیره کردم: ${k} — ${v} 💾`}}
+ const age=msg.match(/(?:سنم|سن من|من)\s*(?:=|:|：)?\s*(\d{1,3})\s*(?:سالمه|ساله|سال)?/);
+ if(age && (msg.includes('سن')||msg.includes('سالمه'))){memory.age=Number(age[1]);saveBotMemory(memory);return `باشه، یادم می‌مونه که ${memory.age} سالته. 💾`}
+ if(msg.includes("چند سالمه")||msg.includes("سن من چنده"))return memory.age?`تو گفتی ${memory.age} سالته 🙂`:"هنوز سنّت رو نگفتی. مثلاً بنویس: «سنم ۱۵ ساله»";
+ if(msg.includes("من کی‌ام")||msg.includes("چی ازم میدونی")||msg.includes("چی ازم می‌دونی")||msg.includes("چی یادت مونده")){let facts=[];if(memory.name)facts.push("اسم: "+memory.name);if(memory.age)facts.push("سن: "+memory.age);for(const [k,v] of Object.entries(memory.profile))facts.push(k+": "+v);return facts.length?"این‌ها رو ازت یادمه:\n"+facts.join("\n"):"هنوز چیزی ذخیره نکردم. مثلاً بگو «یادت باشه رنگ موردعلاقه‌م آبی»."}
+ const teach=msg.match(/^یادم بده\s*[:：]\s*(.*?)\s*(?:=>|->|=)\s*(.+)$/);if(teach){memory.vocabulary[teach[1].trim().toLowerCase()]=teach[2].trim();saveBotMemory(memory);return "یاد گرفتم و ذخیره کردم! 💾"}
+ if(/^(?:دوز|بازی دوز|بیا دوز|شروع دوز|tic.?tac.?toe)$/i.test(msg)){memory.game={board:["","","","","","","","",""]};saveBotMemory(memory);return "🎮 دوز شروع شد! تو X هستی و من O. عدد ۱ تا ۹ رو بفرست:\n\n1 | 2 | 3\n4 | 5 | 6\n7 | 8 | 9"}
+ if(memory.game && /^[1-9۱-۹]$/.test(msg)){let n=Number(msg.replace(/[۱-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)))-1,g=memory.game;if(g.board[n])return "این خونه پره؛ عدد دیگه‌ای انتخاب کن.";g.board[n]="X";const wins=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],win=b=>wins.some(a=>a.every(i=>b[i]===b[a[0]]));if(win(g.board)){memory.game=null;saveBotMemory(memory);return "🎉 بردی!\n"+boardText(g.board)+"\nبرای دور بعد بنویس دوز."}if(g.board.every(Boolean)){memory.game=null;saveBotMemory(memory);return "مساوی شدیم! 🤝\n"+boardText(g.board)+"\nبرای دور بعد بنویس دوز."}let empty=g.board.map((v,i)=>v?null:i).filter(v=>v!==null),move=empty.find(i=>{let b=[...g.board];b[i]="O";return win(b)});if(move===undefined)move=empty.find(i=>{let b=[...g.board];b[i]="X";return win(b)});if(move===undefined)move=empty[Math.floor(Math.random()*empty.length)];g.board[move]="O";let done=win(g.board)||g.board.every(Boolean);if(done)memory.game=null;saveBotMemory(memory);return (win(g.board)?"این دور رو من بردم! 🤖":done?"مساوی شدیم!":"نوبت توئه، یه خونه انتخاب کن.")+"\n"+boardText(g.board)+(done?"\nبرای دور بعد بنویس دوز.":"")}
+ if(/جوک/.test(msg))return botJokes[Math.floor(Math.random()*botJokes.length)];
+ if(/داستان/.test(msg))return botStories[Math.floor(Math.random()*botStories.length)];
+ if(/حساب کن|چقدر میشه|جمع/.test(msg)){let m=msg.match(/(-?\d+(?:\.\d+)?)\s*([+\-×*÷/])\s*(-?\d+(?:\.\d+)?)/);if(m){let a=+m[1],b=+m[3],o=m[2];return "جواب: "+(o==="+"?a+b:o==="-"?a-b:o==="×"||o==="*"?a*b:b===0?"تقسیم بر صفر تعریف نشده":a/b)}}
+ if(/سلام|درود|صبح بخیر|عصر بخیر/.test(msg))return `سلام ${name} جان! 😄 امروز چی تو ذهنته؟`;
+ if(/خوبی|حالت چطوره/.test(msg))return "من آماده‌ام باهات گپ بزنم و کمک کنم! تو چطوری؟ 😊";
+ if(/چه کار|چیکار بلدی|سرگرمی/.test(msg))return "می‌تونیم گپ بزنیم، جوک و داستان بگم، اطلاعاتی که می‌گی یادم نگه دارم، حساب کنم یا دوز بازی کنیم. بنویس «دوز» برای شروع. 🎮";
+ if(/اسم تو چیه|تو کی هستی/.test(msg))return "من ویولت‌ام؛ دستیار گفت‌وگویی داخل همین صفحه‌ام. 🌷";
+ const clean=s=>s.toLowerCase().replace(/[؟?!.,،؛:]/g,"").replace(/ي/g,"ی").replace(/ك/g,"ک").replace(/\s+/g," ").trim();
+ const q=clean(msg);
+ // Interactive teach flow: ask permission, then collect and remember the answer.
+ if(memory.pendingLearn){
+  const pending=memory.pendingLearn;
+  if(pending.stage==="confirm"){
+   if(/^(بله|آره|اره|بله حتما|حتما|yes)$/i.test(q)){
+    pending.stage="answer";saveBotMemory(memory);
+    return "خب، الان می‌تونی یادم بدی! جواب این سؤال رو برام بنویس. ✍️";
+   }
+   if(/^(نه|خیر|نه ممنون|no)$/i.test(q)){
+    memory.pendingLearn=null;saveBotMemory(memory);
+    return "باشه، اشکالی نداره! هر وقت خواستی می‌تونی سؤال دیگه‌ای بپرسی. 😊";
+   }
+   return "فقط بنویس «بله» تا یادم بدی، یا «نه» تا ازش بگذریم.";
+  }
+  if(pending.stage==="answer"){
+   memory.vocabulary[pending.question]=msg.trim();
+   memory.pendingLearn=null;saveBotMemory(memory);
+   return "ممنون که یادم دادی! 💜 جواب رو ذخیره کردم و اگه دوباره همین سؤال رو بپرسی، همین پاسخ رو بهت می‌گم. 🤖";
+  }
+ }
+ for(const [phrase,reply] of Object.entries(memory.vocabulary)){if(q===clean(phrase)||q.includes(clean(phrase)))return reply}
+ const facts=[
+  [/درباره حیوانات|درباره حیوان ها|حیوانات بگو|حیوان ها بگو/,"حیوانات جاندارانی هستند که برای زنده ماندن به آب، غذا و محیط مناسب نیاز دارند. آن‌ها گروه‌های گوناگونی مثل پستانداران، پرندگان، خزندگان، دوزیستان، ماهی‌ها و بی‌مهرگان دارند. هر گونه ویژگی و روش زندگی مخصوص خودش را دارد. 🐾"],
+  [/برنامه نویسی چیه|درباره برنامه نویسی|برنامه نویسی شامل چه زبان/,"برنامه‌نویسی یعنی نوشتن دستورهایی که به رایانه می‌گویند چه کاری انجام دهد. زبان‌های پرکاربرد شامل Python، JavaScript، Java، C# و C++ هستند؛ هرکدام برای کارها و پروژه‌های متفاوتی مناسب‌اند."],
+  [/زبان c#|c# چیه|سی شارپ/,"C# (سی‌شارپ) یک زبان برنامه‌نویسی ساختهٔ مایکروسافت است. از آن برای ساخت برنامه‌های ویندوز، وب و بازی‌ها استفاده می‌شود و در موتور Unity هم کاربرد زیادی دارد."],
+  [/پایتون|python/,"Python (پایتون) زبانی خوانا و نسبتاً ساده برای شروع برنامه‌نویسی است. در اتوماسیون، ساخت وب‌سایت، تحلیل داده، هوش مصنوعی و آموزش استفاده می‌شود."],
+  [/c\+\+|سی پلاس پلاس/,"C++ زبانی قدرتمند و سریع است که در نرم‌افزارهای سیستمی، بازی‌ها و برنامه‌هایی که به کارایی بالا نیاز دارند استفاده می‌شود. مدیریت حافظه و مفاهیمش نسبت به زبان‌های مقدماتی پیچیده‌تر است."],
+  [/یونیتی|unity/,"Unity یک موتور ساخت بازی و محتوای تعاملی است، نه یک زبان برنامه‌نویسی. در Unity معمولاً از C# برای نوشتن رفتارهای بازی استفاده می‌کنند و می‌توان برای چندین پلتفرم خروجی گرفت."],
+  [/فوتبال چیه/,"فوتبال ورزشی تیمی است که معمولاً دو تیم ۱۱ نفره بازی می‌کنند. هدف این است که توپ را با پا وارد دروازهٔ حریف کنند؛ دروازه‌بان می‌تواند در محوطهٔ خودش از دست هم استفاده کند."],
+  [/بهترین بازیکنان فوتبال|بازیکنان فوتبال/,"از بازیکنان شناخته‌شدهٔ فوتبال می‌توان به لیونل مسی، کریستیانو رونالدو، پله، دیه‌گو مارادونا، زین‌الدین زیدان و رونالدینیو اشاره کرد. «بهترین» بودن به معیار و سلیقه بستگی دارد."],
+  [/پرتغال.*جام جهانی|جام جهانی.*پرتغال/,"تیم ملی مردان پرتغال تا پایان جام جهانی ۲۰۲۲ قهرمان جام جهانی فوتبال نشده است. بهترین نتیجه‌اش مقام سوم در سال ۱۹۶۶ بوده است."],
+  [/انگلیس.*جام جهانی|اینگلیس.*جام جهانی|جام جهانی.*انگلیس|جام جهانی.*اینگلیس/,"تیم ملی مردان انگلیس در سال ۱۹۶۶ قهرمان جام جهانی فوتبال شد."],
+  [/آلمان.*جام جهانی|جام جهانی.*آلمان/,"آلمان (با احتساب آلمان غربی) در سال‌های ۱۹۵۴، ۱۹۷۴، ۱۹۹۰ و ۲۰۱۴ قهرمان جام جهانی مردان شد."],
+  [/برزیل.*جام جهانی|جام جهانی.*برزیل/,"برزیل در سال‌های ۱۹۵۸، ۱۹۶۲، ۱۹۷۰، ۱۹۹۴ و ۲۰۰۲ قهرمان جام جهانی مردان شد."],
+  [/ایتالیا.*جام جهانی|جام جهانی.*ایتالیا/,"ایتالیا در سال‌های ۱۹۳۴، ۱۹۳۸، ۱۹۸۲ و ۲۰۰۶ قهرمان جام جهانی مردان شد."],
+  [/آرژانتین.*جام جهانی|جام جهانی.*آرژانتین/,"آرژانتین در سال‌های ۱۹۷۸، ۱۹۸۶ و ۲۰۲۲ قهرمان جام جهانی مردان شد."],
+  [/فرانسه.*جام جهانی|جام جهانی.*فرانسه/,"فرانسه در سال‌های ۱۹۹۸ و ۲۰۱۸ قهرمان جام جهانی مردان شد."],
+  [/اروگوئه.*جام جهانی|جام جهانی.*اروگوئه/,"اروگوئه در سال‌های ۱۹۳۰ و ۱۹۵۰ قهرمان جام جهانی مردان شد."],
+  [/اسپانیا.*جام جهانی|جام جهانی.*اسپانیا/,"اسپانیا در سال ۲۰۱۰ قهرمان جام جهانی مردان شد."]
+ ];
+ for(const [pattern,answer] of facts){if(pattern.test(q))return answer}
+ for(const [key,choices] of Object.entries(botDefaults)){if(msg.includes(key))return choices[Math.floor(Math.random()*choices.length)].replace("{name}",name)}
+ memory.pendingLearn={question:q,stage:"confirm"};saveBotMemory(memory);
+ return "جواب این سؤال رو هنوز بلد نیستم. می‌تونی یادم بدی؟ بنویس بله یا نه.";
+}
+function boardText(b){return [0,1,2].map(r=>b.slice(r*3,r*3+3).map((v,i)=>v||String(r*3+i+1)).join(" | ")).join("\n")}
+
+
+let state={name:'',chats:[],active:null};
+function load(){try{const s=JSON.parse(localStorage.getItem(STORE)||'{}');state={name:s.name||'',chats:Array.isArray(s.chats)?s.chats:[],active:s.active||null}}catch(e){}}
+function save(){localStorage.setItem(STORE,JSON.stringify(state))}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showApp(){ $('signup').classList.add('hidden');$('app').classList.remove('hidden');$('profileName').textContent=state.name;$('userAvatar').textContent=(state.name[0]||'U').toUpperCase();$('welcomeName').textContent=state.name;renderChats();renderMessages(); }
+function newChat(){const c={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:'New chat',messages:[],updated:Date.now()};state.chats.unshift(c);state.active=c.id;save();renderChats();renderMessages();$('prompt').focus();$('sidebar').classList.remove('show')}
+function activeChat(){return state.chats.find(c=>c.id===state.active)}
+function openSavedChat(id){state.active=id;save();renderChats();renderMessages();$('moreMenu').classList.remove('open');$('sidebar').classList.remove('show')}
+function renderChats(){const list=$('chatList'),history=$('historyMenu');list.innerHTML='';history.innerHTML='';state.chats.forEach(c=>{if(!c.messages||!c.messages.length)return;const b=document.createElement('button');b.className='chat-item'+(c.id===state.active?' active':'');b.textContent='▱  '+c.title;b.title=c.title;b.onclick=()=>openSavedChat(c.id);list.appendChild(b);const h=document.createElement('button');h.type='button';h.textContent='▱  '+c.title;h.title=c.title;h.onclick=()=>openSavedChat(c.id);history.appendChild(h)});if(!history.children.length){const empty=document.createElement('div');empty.style.cssText='padding:10px;color:#81758f;font-size:12px';empty.textContent='No previous chats yet';history.appendChild(empty)}}
+function renderMessages(){const c=activeChat(),box=$('messages');box.innerHTML='';$('welcome').classList.toggle('hidden',!!(c&&c.messages.length));if(!c)return;c.messages.forEach(m=>{const d=document.createElement('div');d.className='message '+m.role;d.innerHTML='<div class="msg-avatar">'+(m.role==='user'?'You':'✦')+'</div><div class="bubble">'+escapeHTML(m.text)+'</div>';box.appendChild(d)});$('chatArea').scrollTop=$('chatArea').scrollHeight}
+async function send(){const input=$('prompt'),value=input.value.trim();if(!value)return;if(!activeChat())newChat();const c=activeChat();c.messages.push({role:'user',text:value});if(c.title==='New chat')c.title=value.length>28?value.slice(0,28)+'…':value;c.updated=Date.now();input.value='';input.style.height='auto';$('sendBtn').disabled=true;save();renderChats();renderMessages();const pending=document.createElement('div');pending.className='message assistant';pending.innerHTML='<div class="msg-avatar">✦</div><div class="bubble"><div class="typing"><i></i><i></i><i></i></div></div>';$('messages').appendChild(pending);$('chatArea').scrollTop=$('chatArea').scrollHeight;try{const apiMessages=c.messages.slice(-30).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.text}));const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:apiMessages})});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.error||'OpenRouter request failed.');const answer=String(data.reply||'').trim()||'I received an empty response.';pending.remove();c.messages.push({role:'assistant',text:answer});c.updated=Date.now();save();renderMessages()}catch(err){pending.remove();const answer='Connection error: '+(err?.message||'Could not reach OpenRouter.')+'\n\nMake sure the server is running and your .env API key is correct.';c.messages.push({role:'assistant',text:answer});c.updated=Date.now();save();renderMessages()}finally{$('sendBtn').disabled=!input.value.trim()}}
+$('signupForm').addEventListener('submit',e=>{e.preventDefault();const name=$('username').value.trim();if(!name)return;state.name=name;save();showApp()});
+$('sendBtn').onclick=send;$('prompt').addEventListener('input',e=>{$('sendBtn').disabled=!e.target.value.trim();e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,130)+'px'});$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+$('newChat').onclick=newChat;$('newTop').onclick=newChat;$('menuNewChat').onclick=()=>{newChat();$('moreMenu').classList.remove('open')};$('logoutBtn').onclick=()=>{state.name='';save();$('moreMenu').classList.remove('open');$('app').classList.add('hidden');$('signup').classList.remove('hidden');$('username').value='';};$('moreBtn').onclick=e=>{e.stopPropagation();$('moreMenu').classList.toggle('open')};document.addEventListener('click',e=>{if(!$('moreMenu').contains(e.target))$('moreMenu').classList.remove('open')});
+$('openSide').onclick=()=> $('sidebar').classList.add('show');$('closeSide').onclick=()=> $('sidebar').classList.remove('show');
+load();if(state.name){showApp();newChat()}else{$('signup').classList.remove('hidden');$('app').classList.add('hidden')}
+</script>
+</body>
+</html>
