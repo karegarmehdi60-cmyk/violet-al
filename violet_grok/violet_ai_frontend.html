@@ -127,41 +127,54 @@ body:after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opaci
 @keyframes starFloat{0%{transform:translate3d(0,0,0) scale(1)}100%{transform:translate3d(-10px,8px,0) scale(1.02)}}
 @keyframes starTwinkle{0%{opacity:.35}45%{opacity:1}100%{opacity:.72}}
 @media(prefers-reduced-motion:reduce){body:after{animation:none}}
+
+/* Added Violet controls: chat delete/copy, settings, language */
+.nav-action{display:flex;align-items:center;gap:10px;width:100%;padding:12px 13px;border-radius:12px;background:transparent;border:1px solid transparent;color:#d9cfee;text-align:left;font-size:12px;font-weight:600;margin-top:7px}
+.nav-action:hover{background:#ffffff0b;border-color:#ffffff12;color:#fff}
+.nav-action.logout-main{color:#ff5d69}.nav-action.logout-main:hover{background:rgba(255,65,82,.13);color:#ff7b85}
+.chat-item-wrap{display:flex;align-items:center;gap:3px}.chat-item-wrap .chat-item{flex:1;min-width:0}.chat-delete{width:29px;height:29px;flex:0 0 29px;border:0;background:transparent;color:#82758f;border-radius:8px;font-size:14px;display:grid;place-items:center}.chat-delete:hover{background:rgba(255,65,82,.13);color:#ff6874}
+.message-actions{display:flex;gap:4px;margin-top:4px;opacity:.55}.message:hover .message-actions{opacity:1}.copy-msg{border:0;background:transparent;color:#a99bbd;font-size:10px;padding:3px 6px;border-radius:6px}.copy-msg:hover{background:#ffffff0c;color:#fff}.copy-msg.copied{color:#b99aff}
+.settings-panel{position:fixed;inset:0;display:none;place-items:center;background:rgba(3,2,8,.58);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:30;padding:20px}.settings-panel.open{display:grid}.settings-card{width:min(430px,100%);padding:24px;border:1px solid rgba(226,210,255,.25);border-radius:22px;background:linear-gradient(135deg,rgba(40,28,65,.92),rgba(15,11,29,.94));box-shadow:0 25px 80px #0009}.settings-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.settings-title{font-size:17px;font-weight:700}.language-label{font-size:11px;color:#a99cba;margin-bottom:10px}.language-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.language-btn{border:1px solid rgba(225,210,255,.16);background:rgba(255,255,255,.05);color:#ded4ee;border-radius:11px;padding:11px 7px;font-size:12px}.language-btn:hover,.language-btn.active{background:rgba(149,99,255,.2);border-color:rgba(197,168,255,.4);color:#fff}.settings-close{width:32px;height:32px;border:0;background:#ffffff08;color:#b9accf;border-radius:9px}.settings-note{font-size:10px;color:#81758f;margin-top:17px;line-height:1.6}
+.history-row{display:flex;align-items:center;gap:3px}.history-row button:not(.chat-delete){flex:1;min-width:0}.history-row .chat-delete{margin-right:2px}
+@media(max-width:700px){.settings-card{padding:20px}.language-grid{grid-template-columns:1fr}}
+
 </style>
-</head>
+<style id="menu-fix"> @media(max-width:700px){#openSide{display:grid!important;position:relative;z-index:9999;pointer-events:auto!important}.sidebar.show{transform:translateX(0)!important}.sidebar{z-index:1000!important}}</style></head>
 <body>
 <section id="signup" class="screen">
  <div class="signup-card">
   <div class="brand"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/><path d="m18.5 2 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" fill="white"/></svg></div>Violet AI</div>
-  <h1>Welcome aboard</h1><p class="sub">Your space for ideas, questions, and conversations. Let’s get you started.</p>
+  <h1 data-i18n="welcomeTitle">Welcome aboard</h1><p class="sub" data-i18n="welcomeSub">Your space for ideas, questions, and conversations. Let’s get you started.</p>
   <form id="signupForm">
-   <label class="field-label" for="username">Username</label>
+   <label class="field-label" for="username" data-i18n="username">Username</label>
    <input class="textbox" id="username" maxlength="32" placeholder="e.g. Maziar" autocomplete="nickname" required>
-   <button class="primary" type="submit">Continue</button>
+   <button class="primary" type="submit" data-i18n="continue">Continue</button>
   </form>
-  <div class="or">OR CONTINUE WITH</div>
+  <div class="or" data-i18n="orContinue">OR CONTINUE WITH</div>
   <div class="social"><button type="button" title="Demo only"><span>G</span>Google</button><button type="button" title="Demo only"><span>f</span>Facebook</button></div>
-  <p class="fine">By continuing, you agree to keep things kind and curious.</p>
+  <p class="fine" data-i18n="fine">By continuing, you agree to keep things kind and curious.</p>
  </div>
 </section>
 <section id="app" class="screen hidden">
  <aside class="sidebar" id="sidebar">
-  <div class="side-top"><div class="brand small"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/></svg></div>Violet AI</div><div class="more-wrap"><button class="iconbtn" id="moreBtn" aria-label="More options"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button><div class="menu" id="moreMenu"><button type="button" id="menuNewChat">＋ &nbsp; New chat</button><div class="section-label" style="margin:8px 10px">Saved chats</div><div id="historyMenu"></div><div class="menu-divider"></div><button type="button" class="logout-item" id="logoutBtn">Log out</button></div></div><button class="iconbtn" id="closeSide" aria-label="Close sidebar">✕</button></div>
-  <button class="newchat" id="newChat"><span>＋</span> New chat</button>
-  <div class="section-label">Recent chats</div>
+  <div class="side-top"><div class="brand small"><div class="logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.7" stroke-linejoin="round"/></svg></div>Violet AI</div><div class="more-wrap"><button class="iconbtn" id="moreBtn" aria-label="More options"><svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button><div class="menu" id="moreMenu"><button type="button" id="menuNewChat">＋ &nbsp; <span data-i18n="newChat">New chat</span></button><div class="section-label" style="margin:8px 10px" data-i18n="savedChats">Saved chats</div><div id="historyMenu"></div><div class="menu-divider"></div><button type="button" class="logout-item" id="logoutBtn">Log out</button></div></div><button type="button" class="iconbtn" id="closeSide" aria-label="Close sidebar" onclick="document.getElementById('sidebar').classList.remove('show')">✕</button></div>
+  <button class="newchat" id="newChat"><span>＋</span> <span data-i18n="newChat">New chat</span></button>
+  <button class="nav-action" id="settingsBtn" type="button"><span>⚙</span> <span data-i18n="settings">Settings</span></button>
+  <button class="nav-action logout-main" id="logoutMainBtn" type="button"><span>↪</span> <span data-i18n="logout">Log out</span></button>
+  <div class="section-label" data-i18n="recentChats">Recent chats</div>
   <div class="chat-list" id="chatList"></div>
-  <div class="side-bottom"><div class="avatar" id="userAvatar">M</div><div><div class="profile-name" id="profileName">Maziar</div><div class="profile-hint">Personal workspace</div></div></div>
+  <div class="side-bottom"><div class="avatar" id="userAvatar">M</div><div><div class="profile-name" id="profileName">Maziar</div><div class="profile-hint" data-i18n="workspace">Personal workspace</div></div></div>
  </aside>
  <main class="main">
   <header class="topbar">
-   <div class="top-left"><button class="iconbtn mobile-menu" id="openSide" aria-label="Open menu">☰</button><span class="model-pill">✦ &nbsp; Violet Assistant</span></div>
+   <div class="top-left"><button type="button" class="iconbtn mobile-menu" id="openSide" aria-label="Open menu" onclick="document.getElementById('sidebar').classList.add('show')">☰</button><span class="model-pill">✦ &nbsp; Violet Assistant</span></div>
    <button class="iconbtn" id="newTop" title="New chat">＋</button>
   </header>
   <div class="chat-area" id="chatArea">
-   <div class="welcome" id="welcome"><div class="welcome-orb"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/><path d="m18.5 2 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" fill="white"/></svg></div><h2>Hello, <em id="welcomeName">Maziar</em></h2><p>Welcome to your own little corner of the internet. What would you like to explore today?</p></div>
+   <div class="welcome" id="welcome"><div class="welcome-orb"><svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M12 2.8 14.5 9.5 21.2 12 14.5 14.5 12 21.2 9.5 14.5 2.8 12 9.5 9.5 12 2.8Z" stroke="white" stroke-width="1.5" stroke-linejoin="round"/><path d="m18.5 2 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z" fill="white"/></svg></div><h2>Hello, <em id="welcomeName">Maziar</em></h2><p id="welcomeText" data-i18n="welcomeText">Welcome to your own little corner of the internet. What would you like to explore today?</p></div>
    <div class="messages" id="messages"></div>
   </div>
-  <div class="composer-wrap"><div class="composer"><textarea id="prompt" rows="1" placeholder="Message Violet AI..." aria-label="Message"></textarea><div class="composer-bottom"><span class="composer-note">Enter to send · Shift + Enter for a new line</span><button class="send" id="sendBtn" disabled aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5m-6 6 6-6 6 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><div class="notice">Violet AI · Connected to OpenRouter</div></div>
+  <div class="composer-wrap"><div class="composer"><textarea id="prompt" rows="1" placeholder="Message Violet AI..." aria-label="Message"></textarea><div class="composer-bottom"><span class="composer-note" data-i18n="composerNote">Enter to send · Shift + Enter for a new line</span><button class="send" id="sendBtn" disabled aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5m-6 6 6-6 6 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div><div class="notice" data-i18n="notice">Violet AI · Local responses inside this file</div></div>
  </main>
 </section>
 <script>
@@ -285,15 +298,58 @@ function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function showApp(){ $('signup').classList.add('hidden');$('app').classList.remove('hidden');$('profileName').textContent=state.name;$('userAvatar').textContent=(state.name[0]||'U').toUpperCase();$('welcomeName').textContent=state.name;renderChats();renderMessages(); }
 function newChat(){const c={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:'New chat',messages:[],updated:Date.now()};state.chats.unshift(c);state.active=c.id;save();renderChats();renderMessages();$('prompt').focus();$('sidebar').classList.remove('show')}
 function activeChat(){return state.chats.find(c=>c.id===state.active)}
+function deleteChat(id,e){if(e)e.stopPropagation();const c=state.chats.find(x=>x.id===id);if(!c)return;if(!confirm((translations[currentLang]||translations.en).deleteConfirm)){return}state.chats=state.chats.filter(x=>x.id!==id);if(state.active===id){state.active=state.chats.find(x=>x.messages&&x.messages.length)?.id||null;if(!state.active)newChat()}save();renderChats();renderMessages()}
 function openSavedChat(id){state.active=id;save();renderChats();renderMessages();$('moreMenu').classList.remove('open');$('sidebar').classList.remove('show')}
-function renderChats(){const list=$('chatList'),history=$('historyMenu');list.innerHTML='';history.innerHTML='';state.chats.forEach(c=>{if(!c.messages||!c.messages.length)return;const b=document.createElement('button');b.className='chat-item'+(c.id===state.active?' active':'');b.textContent='▱  '+c.title;b.title=c.title;b.onclick=()=>openSavedChat(c.id);list.appendChild(b);const h=document.createElement('button');h.type='button';h.textContent='▱  '+c.title;h.title=c.title;h.onclick=()=>openSavedChat(c.id);history.appendChild(h)});if(!history.children.length){const empty=document.createElement('div');empty.style.cssText='padding:10px;color:#81758f;font-size:12px';empty.textContent='No previous chats yet';history.appendChild(empty)}}
-function renderMessages(){const c=activeChat(),box=$('messages');box.innerHTML='';$('welcome').classList.toggle('hidden',!!(c&&c.messages.length));if(!c)return;c.messages.forEach(m=>{const d=document.createElement('div');d.className='message '+m.role;d.innerHTML='<div class="msg-avatar">'+(m.role==='user'?'You':'✦')+'</div><div class="bubble">'+escapeHTML(m.text)+'</div>';box.appendChild(d)});$('chatArea').scrollTop=$('chatArea').scrollHeight}
-async function send(){const input=$('prompt'),value=input.value.trim();if(!value)return;if(!activeChat())newChat();const c=activeChat();c.messages.push({role:'user',text:value});if(c.title==='New chat')c.title=value.length>28?value.slice(0,28)+'…':value;c.updated=Date.now();input.value='';input.style.height='auto';$('sendBtn').disabled=true;save();renderChats();renderMessages();const pending=document.createElement('div');pending.className='message assistant';pending.innerHTML='<div class="msg-avatar">✦</div><div class="bubble"><div class="typing"><i></i><i></i><i></i></div></div>';$('messages').appendChild(pending);$('chatArea').scrollTop=$('chatArea').scrollHeight;try{const apiMessages=c.messages.slice(-30).map(m=>({role:m.role==='assistant'?'assistant':'user',content:m.text}));const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:apiMessages})});let data={};try{data=await response.json()}catch{}if(!response.ok)throw new Error(data.error||'OpenRouter request failed.');const answer=String(data.reply||'').trim()||'I received an empty response.';pending.remove();c.messages.push({role:'assistant',text:answer});c.updated=Date.now();save();renderMessages()}catch(err){pending.remove();const answer='Connection error: '+(err?.message||'Could not reach OpenRouter.')+'\n\nMake sure the server is running and your .env API key is correct.';c.messages.push({role:'assistant',text:answer});c.updated=Date.now();save();renderMessages()}finally{$('sendBtn').disabled=!input.value.trim()}}
+function makeDeleteButton(id){const d=document.createElement('button');d.type='button';d.className='chat-delete';d.textContent='🗑';d.title=translations[currentLang].deleteChat;d.setAttribute('aria-label',translations[currentLang].deleteChat);d.onclick=e=>deleteChat(id,e);return d}
+function renderChats(){const list=$('chatList'),history=$('historyMenu');list.innerHTML='';history.innerHTML='';state.chats.forEach(c=>{if(!c.messages||!c.messages.length)return;
+ const wrap=document.createElement('div');wrap.className='chat-item-wrap';const b=document.createElement('button');b.className='chat-item'+(c.id===state.active?' active':'');b.textContent='▱  '+c.title;b.title=c.title;b.onclick=()=>openSavedChat(c.id);wrap.appendChild(b);wrap.appendChild(makeDeleteButton(c.id));list.appendChild(wrap);
+ const hr=document.createElement('div');hr.className='history-row';const h=document.createElement('button');h.type='button';h.textContent='▱  '+c.title;h.title=c.title;h.onclick=()=>openSavedChat(c.id);hr.appendChild(h);hr.appendChild(makeDeleteButton(c.id));history.appendChild(hr);
+ });if(!history.children.length){const empty=document.createElement('div');empty.style.cssText='padding:10px;color:#81758f;font-size:12px';empty.textContent=translations[currentLang].noChats;history.appendChild(empty)}}
+function copyMessage(text,button){const done=()=>{button.textContent='✓ '+translations[currentLang].copied;button.classList.add('copied');setTimeout(()=>{button.textContent='⧉ '+translations[currentLang].copy;button.classList.remove('copied')},1200)};if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done))}else fallbackCopy(text,done)}
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}finally{ta.remove()}}
+function renderMessages(){const c=activeChat(),box=$('messages');box.innerHTML='';$('welcome').classList.toggle('hidden',!!(c&&c.messages.length));if(!c)return;c.messages.forEach(m=>{const d=document.createElement('div');d.className='message '+m.role;const avatar=m.role==='user'?'You':'✦';d.innerHTML='<div class="msg-avatar">'+avatar+'</div><div><div class="bubble">'+escapeHTML(m.text)+'</div><div class="message-actions"><button class="copy-msg" type="button">⧉ '+translations[currentLang].copy+'</button></div></div>';d.querySelector('.copy-msg').onclick=()=>copyMessage(m.text,d.querySelector('.copy-msg'));box.appendChild(d)});$('chatArea').scrollTop=$('chatArea').scrollHeight}
+
+async function send(){const input=$('prompt'),value=input.value.trim();if(!value)return;if(!activeChat())newChat();const c=activeChat();c.messages.push({role:'user',text:value});if(c.title==='New chat')c.title=value.length>28?value.slice(0,28)+'…':value;c.updated=Date.now();input.value='';input.style.height='auto';$('sendBtn').disabled=true;save();renderChats();renderMessages();const pending=document.createElement('div');pending.className='message assistant';pending.innerHTML='<div class="msg-avatar">✦</div><div class="bubble"><div class="typing"><i></i><i></i><i></i></div></div>';$('messages').appendChild(pending);$('chatArea').scrollTop=$('chatArea').scrollHeight;setTimeout(()=>{const answer=botReply(value);pending.remove();c.messages.push({role:'assistant',text:answer});save();renderMessages()},380)}
 $('signupForm').addEventListener('submit',e=>{e.preventDefault();const name=$('username').value.trim();if(!name)return;state.name=name;save();showApp()});
 $('sendBtn').onclick=send;$('prompt').addEventListener('input',e=>{$('sendBtn').disabled=!e.target.value.trim();e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,130)+'px'});$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
-$('newChat').onclick=newChat;$('newTop').onclick=newChat;$('menuNewChat').onclick=()=>{newChat();$('moreMenu').classList.remove('open')};$('logoutBtn').onclick=()=>{state.name='';save();$('moreMenu').classList.remove('open');$('app').classList.add('hidden');$('signup').classList.remove('hidden');$('username').value='';};$('moreBtn').onclick=e=>{e.stopPropagation();$('moreMenu').classList.toggle('open')};document.addEventListener('click',e=>{if(!$('moreMenu').contains(e.target))$('moreMenu').classList.remove('open')});
-$('openSide').onclick=()=> $('sidebar').classList.add('show');$('closeSide').onclick=()=> $('sidebar').classList.remove('show');
-load();if(state.name){showApp();newChat()}else{$('signup').classList.remove('hidden');$('app').classList.add('hidden')}
+const translations={
+ en:{newChat:'New chat',settings:'Settings',logout:'Log out',recentChats:'Recent chats',savedChats:'Saved chats',welcomeTitle:'Welcome aboard',welcomeSub:'Your space for ideas, questions, and conversations. Let’s get you started.',username:'Username',continue:'Continue',orContinue:'OR CONTINUE WITH',fine:'By continuing, you agree to keep things kind and curious.',workspace:'Personal workspace',welcomeText:'Welcome to your own little corner of the internet. What would you like to explore today?',composerNote:'Enter to send · Shift + Enter for a new line',notice:'Violet AI · Connected to OpenRouter',language:'Language',languageNote:"Changing the language translates Violet's interface. Your chats are kept.",copy:'Copy',copied:'Copied',deleteChat:'Delete chat',deleteConfirm:'Delete this chat?',noChats:'No previous chats yet',messagePlaceholder:'Message Violet AI...'},
+ fa:{newChat:'چت جدید',settings:'تنظیمات',logout:'خروج از حساب',recentChats:'چت‌های اخیر',savedChats:'چت‌های ذخیره‌شده',welcomeTitle:'خوش آمدید',welcomeSub:'فضای شما برای ایده‌ها، سؤال‌ها و گفتگوها. شروع کنیم.',username:'نام کاربری',continue:'ادامه',orContinue:'یا ادامه با',fine:'با ادامه دادن، موافقت می‌کنید که مهربان و کنجکاو بمانیم.',workspace:'فضای شخصی',welcomeText:'به گوشه کوچک خودت در اینترنت خوش آمدی. امروز دوست داری چه چیزی را بررسی کنیم؟',composerNote:'Enter برای ارسال · Shift + Enter برای خط جدید',notice:'Violet AI · متصل به OpenRouter',language:'زبان',languageNote:'با تغییر زبان، رابط کاربری Violet ترجمه می‌شود. چت‌های شما حفظ می‌شوند.',copy:'کپی',copied:'کپی شد',deleteChat:'حذف چت',deleteConfirm:'این چت حذف شود؟',noChats:'هنوز چت قبلی وجود ندارد',messagePlaceholder:'پیام به Violet AI...'},
+ zh:{newChat:'新聊天',settings:'设置',logout:'退出账号',recentChats:'最近聊天',savedChats:'已保存的聊天',welcomeTitle:'欢迎',welcomeSub:'这是你的想法、问题和对话空间。开始吧。',username:'用户名',continue:'继续',orContinue:'或使用以下方式继续',fine:'继续使用即表示你愿意保持友善和好奇。',workspace:'个人空间',welcomeText:'欢迎来到属于你的小小网络空间。今天想探索什么？',composerNote:'Enter 发送 · Shift + Enter 换行',notice:'Violet AI · 已连接到 OpenRouter',language:'语言',languageNote:'更改语言会翻译 Violet 的界面。你的聊天记录会保留。',copy:'复制',copied:'已复制',deleteChat:'删除聊天',deleteConfirm:'删除此聊天？',noChats:'还没有以前的聊天',messagePlaceholder:'发送消息给 Violet AI...'}
+};
+let currentLang=localStorage.getItem('violet_ai_lang_v1')||'en';
+function applyLanguage(){const t=translations[currentLang]||translations.en;document.documentElement.lang=currentLang==='fa'?'fa':currentLang==='zh'?'zh':'en';document.documentElement.dir=currentLang==='fa'?'rtl':'ltr';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(t[k])el.textContent=t[k]});$('prompt').placeholder=t.messagePlaceholder;document.querySelectorAll('.language-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));renderChats();renderMessages()}
+function setLanguage(lang){if(!translations[lang])return;currentLang=lang;localStorage.setItem('violet_ai_lang_v1',lang);applyLanguage();$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')}
+function openSettings(){applyLanguage();$('settingsPanel').classList.add('open');$('settingsPanel').setAttribute('aria-hidden','false')}
+document.addEventListener('DOMContentLoaded',()=>{
+  $('settingsBtn').onclick=openSettings;
+  $('settingsClose').onclick=()=>{$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')};
+  $('settingsPanel').addEventListener('click',e=>{if(e.target===$('settingsPanel')){$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')}});
+  document.querySelectorAll('.language-btn').forEach(b=>b.onclick=()=>setLanguage(b.dataset.lang));
+  $('newChat').onclick=newChat;$('newTop').onclick=newChat;
+  $('menuNewChat').onclick=()=>{newChat();$('moreMenu').classList.remove('open')};
+  const doLogout=()=>{state.name='';save();$('moreMenu').classList.remove('open');$('settingsPanel').classList.remove('open');$('app').classList.add('hidden');$('signup').classList.remove('hidden');$('username').value='';$('username').focus()};
+  $('logoutBtn').onclick=doLogout;$('logoutMainBtn').onclick=doLogout;
+  $('moreBtn').onclick=e=>{e.stopPropagation();$('moreMenu').classList.toggle('open')};
+  document.addEventListener('click',e=>{if(!$('moreMenu').contains(e.target)&&e.target!==$('moreBtn'))$('moreMenu').classList.remove('open')});
+  $('openSide').onclick=()=> $('sidebar').classList.add('show');
+  $('closeSide').onclick=()=> $('sidebar').classList.remove('show');
+  load();applyLanguage();
+  if(state.name){showApp()}else{$('signup').classList.remove('hidden');$('app').classList.add('hidden')}
+});
 </script>
+
+<div class="settings-panel" id="settingsPanel" aria-hidden="true">
+ <div class="settings-card" role="dialog" aria-modal="true">
+  <div class="settings-head"><div class="settings-title" data-i18n="settings">Settings</div><button class="settings-close" id="settingsClose" type="button" aria-label="Close">✕</button></div>
+  <div class="language-label" data-i18n="language">Language</div>
+  <div class="language-grid">
+   <button class="language-btn" data-lang="fa" type="button">🇮🇷 فارسی</button>
+   <button class="language-btn" data-lang="en" type="button">🇬🇧 English</button>
+   <button class="language-btn" data-lang="zh" type="button">🇨🇳 中文</button>
+  </div>
+  <div class="settings-note" data-i18n="languageNote">Changing the language translates Violet's interface. Your chats are kept.</div>
+ </div>
+</div>
 </body>
 </html>
