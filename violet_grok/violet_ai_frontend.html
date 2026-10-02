@@ -309,7 +309,47 @@ function copyMessage(text,button){const done=()=>{button.textContent='✓ '+tran
 function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');done()}finally{ta.remove()}}
 function renderMessages(){const c=activeChat(),box=$('messages');box.innerHTML='';$('welcome').classList.toggle('hidden',!!(c&&c.messages.length));if(!c)return;c.messages.forEach(m=>{const d=document.createElement('div');d.className='message '+m.role;const avatar=m.role==='user'?'You':'✦';d.innerHTML='<div class="msg-avatar">'+avatar+'</div><div><div class="bubble">'+escapeHTML(m.text)+'</div><div class="message-actions"><button class="copy-msg" type="button">⧉ '+translations[currentLang].copy+'</button></div></div>';d.querySelector('.copy-msg').onclick=()=>copyMessage(m.text,d.querySelector('.copy-msg'));box.appendChild(d)});$('chatArea').scrollTop=$('chatArea').scrollHeight}
 
-async function send(){const input=$('prompt'),value=input.value.trim();if(!value)return;if(!activeChat())newChat();const c=activeChat();c.messages.push({role:'user',text:value});if(c.title==='New chat')c.title=value.length>28?value.slice(0,28)+'…':value;c.updated=Date.now();input.value='';input.style.height='auto';$('sendBtn').disabled=true;save();renderChats();renderMessages();const pending=document.createElement('div');pending.className='message assistant';pending.innerHTML='<div class="msg-avatar">✦</div><div class="bubble"><div class="typing"><i></i><i></i><i></i></div></div>';$('messages').appendChild(pending);$('chatArea').scrollTop=$('chatArea').scrollHeight;setTimeout(()=>{const answer=botReply(value);pending.remove();c.messages.push({role:'assistant',text:answer});save();renderMessages()},380)}
+async function send(){
+  const input=$('prompt'),value=input.value.trim();
+  if(!value)return;
+  if(!activeChat())newChat();
+  const c=activeChat();
+  c.messages.push({role:'user',text:value});
+  if(c.title==='New chat')c.title=value.length>28?value.slice(0,28)+'…':value;
+  c.updated=Date.now();
+  input.value='';input.style.height='auto';$('sendBtn').disabled=true;
+  save();renderChats();renderMessages();
+
+  const pending=document.createElement('div');
+  pending.className='message assistant';
+  pending.innerHTML='<div class="msg-avatar">✦</div><div class="bubble"><div class="typing"><i></i><i></i><i></i></div></div>';
+  $('messages').appendChild(pending);
+  $('chatArea').scrollTop=$('chatArea').scrollHeight;
+
+  try{
+    const response=await fetch('/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message:value})
+    });
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(data.error||'Server error');
+    const answer=String(data.reply||'').trim();
+    if(!answer)throw new Error('The AI returned an empty response.');
+    pending.remove();
+    c.messages.push({role:'assistant',text:answer});
+    c.updated=Date.now();
+    save();renderMessages();
+  }catch(error){
+    pending.remove();
+    const answer='⚠️ Connection error: '+(error&&error.message?error.message:'Could not reach the AI server.');
+    c.messages.push({role:'assistant',text:answer});
+    c.updated=Date.now();
+    save();renderMessages();
+  }finally{
+    $('sendBtn').disabled=false;
+  }
+}
 $('signupForm').addEventListener('submit',e=>{e.preventDefault();const name=$('username').value.trim();if(!name)return;state.name=name;save();showApp()});
 $('sendBtn').onclick=send;$('prompt').addEventListener('input',e=>{$('sendBtn').disabled=!e.target.value.trim();e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,130)+'px'});$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
 const translations={
@@ -321,22 +361,10 @@ let currentLang=localStorage.getItem('violet_ai_lang_v1')||'en';
 function applyLanguage(){const t=translations[currentLang]||translations.en;document.documentElement.lang=currentLang==='fa'?'fa':currentLang==='zh'?'zh':'en';document.documentElement.dir=currentLang==='fa'?'rtl':'ltr';document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(t[k])el.textContent=t[k]});$('prompt').placeholder=t.messagePlaceholder;document.querySelectorAll('.language-btn').forEach(b=>b.classList.toggle('active',b.dataset.lang===currentLang));renderChats();renderMessages()}
 function setLanguage(lang){if(!translations[lang])return;currentLang=lang;localStorage.setItem('violet_ai_lang_v1',lang);applyLanguage();$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')}
 function openSettings(){applyLanguage();$('settingsPanel').classList.add('open');$('settingsPanel').setAttribute('aria-hidden','false')}
-document.addEventListener('DOMContentLoaded',()=>{
-  $('settingsBtn').onclick=openSettings;
-  $('settingsClose').onclick=()=>{$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')};
-  $('settingsPanel').addEventListener('click',e=>{if(e.target===$('settingsPanel')){$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')}});
-  document.querySelectorAll('.language-btn').forEach(b=>b.onclick=()=>setLanguage(b.dataset.lang));
-  $('newChat').onclick=newChat;$('newTop').onclick=newChat;
-  $('menuNewChat').onclick=()=>{newChat();$('moreMenu').classList.remove('open')};
-  const doLogout=()=>{state.name='';save();$('moreMenu').classList.remove('open');$('settingsPanel').classList.remove('open');$('app').classList.add('hidden');$('signup').classList.remove('hidden');$('username').value='';$('username').focus()};
-  $('logoutBtn').onclick=doLogout;$('logoutMainBtn').onclick=doLogout;
-  $('moreBtn').onclick=e=>{e.stopPropagation();$('moreMenu').classList.toggle('open')};
-  document.addEventListener('click',e=>{if(!$('moreMenu').contains(e.target)&&e.target!==$('moreBtn'))$('moreMenu').classList.remove('open')});
-  $('openSide').onclick=()=> $('sidebar').classList.add('show');
-  $('closeSide').onclick=()=> $('sidebar').classList.remove('show');
-  load();applyLanguage();
-  if(state.name){showApp()}else{$('signup').classList.remove('hidden');$('app').classList.add('hidden')}
-});
+$('settingsBtn').onclick=openSettings;$('settingsClose').onclick=()=>{$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')};$('settingsPanel').addEventListener('click',e=>{if(e.target===$('settingsPanel')){$('settingsPanel').classList.remove('open');$('settingsPanel').setAttribute('aria-hidden','true')}});document.querySelectorAll('.language-btn').forEach(b=>b.onclick=()=>setLanguage(b.dataset.lang));
+$('newChat').onclick=newChat;$('newTop').onclick=newChat;$('menuNewChat').onclick=()=>{newChat();$('moreMenu').classList.remove('open')};$('logoutBtn').onclick=()=>{state.name='';save();$('moreMenu').classList.remove('open');$('app').classList.add('hidden');$('signup').classList.remove('hidden');$('username').value='';};$('logoutMainBtn').onclick=()=>{state.name='';save();$('settingsPanel').classList.remove('open');$('app').classList.add('hidden');$('signup').classList.remove('hidden');$('username').value='';};$('moreBtn').onclick=e=>{e.stopPropagation();$('moreMenu').classList.toggle('open')};document.addEventListener('click',e=>{if(!$('moreMenu').contains(e.target))$('moreMenu').classList.remove('open')});
+$('openSide').onclick=()=> $('sidebar').classList.add('show');$('closeSide').onclick=()=> $('sidebar').classList.remove('show');
+load();applyLanguage();if(state.name){showApp();newChat()}else{$('signup').classList.remove('hidden');$('app').classList.add('hidden')}
 </script>
 
 <div class="settings-panel" id="settingsPanel" aria-hidden="true">
