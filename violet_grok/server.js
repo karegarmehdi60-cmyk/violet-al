@@ -27,7 +27,7 @@ app.get("/api/status", (_req, res) => {
   res.json({ ok: true, keyConfigured: Boolean(process.env.OPENROUTER_API_KEY) });
 });
 
-app.post("/api/chat", async (req, res) => {
+app.post("/chat", async (req, res) => {
   try {
     if (!process.env.OPENROUTER_API_KEY) {
       return res.status(500).json({ error: "OPENROUTER_API_KEY is missing. Put your key in .env." });
