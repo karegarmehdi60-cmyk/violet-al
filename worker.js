@@ -2,7 +2,6 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Chat API
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -13,7 +12,10 @@ export default {
         }
 
         if (!env.OPENROUTER_API_KEY) {
-          return json({ error: "OPENROUTER_API_KEY is not configured." }, 500);
+          return json(
+            { error: "OPENROUTER_API_KEY is not configured." },
+            500
+          );
         }
 
         const response = await fetch(
@@ -68,7 +70,6 @@ export default {
         }
 
         return json({ reply });
-
       } catch (error) {
         return json(
           { error: error?.message || "Server error." },
@@ -77,31 +78,12 @@ export default {
       }
     }
 
-    // Show Violet HTML
-    if (request.method === "GET") {
-      return new Response(
-        <!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Violet AI</title>
-</head>
-<body>
-<h1>Violet AI</h1>
-<p>Cloudflare Worker is connected.</p>
-</body>
-</html>,
-        {
-          status: 200,
-          headers: {
-            "Content-Type": "text/html; charset=UTF-8"
-          }
-        }
-      );
-    }
-
-    return json({ error: "Method not allowed." }, 405);
+    return new Response("Violet AI Worker is running.", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain; charset=UTF-8"
+      }
+    });
   }
 };
 
@@ -109,7 +91,7 @@ function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "application/json; charset=UTF-8"
     }
   });
 }
