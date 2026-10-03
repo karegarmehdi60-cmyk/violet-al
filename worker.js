@@ -2,55 +2,30 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Chat endpoint
+    // Chat API
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
         const message = String(body?.message || "").trim();
 
         if (!message) {
-          return new Response(
-            JSON.stringify({
-              error: "Message is empty."
-            }),
-            {
-              status: 400,
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
-          );
+          return json({ error: "Message is empty." }, 400);
         }
 
-        // Check API key
         if (!env.OPENROUTER_API_KEY) {
-          return new Response(
-            JSON.stringify({
-              error: "OPENROUTER_API_KEY is not configured."
-            }),
-            {
-              status: 500,
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
-          );
+          return json({ error: "OPENROUTER_API_KEY is not configured." }, 500);
         }
 
-        // Send request to OpenRouter
         const response = await fetch(
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
-
             headers: {
               "Content-Type": "application/json",
               "Authorization": "Bearer " + env.OPENROUTER_API_KEY
             },
-
             body: JSON.stringify({
               model: "openrouter/free",
-
               messages: [
                 {
                   role: "system",
@@ -60,13 +35,11 @@ export default {
                     "Reply in the same language as the user. " +
                     "If the user asks who created you, answer: Maziar M.K."
                 },
-
                 {
                   role: "user",
                   content: message
                 }
               ],
-
               temperature: 0.7
             })
           }
@@ -74,77 +47,69 @@ export default {
 
         const data = await response.json();
 
-        // OpenRouter error
         if (!response.ok) {
-          return new Response(
-            JSON.stringify({
+          return json(
+            {
               error:
                 data?.error?.message ||
                 "OpenRouter request failed."
-            }),
-            {
-              status: response.status,
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
+            },
+            response.status
           );
         }
 
-        // Get AI answer
-        const reply =
-          data?.choices?.[0]?.message?.content;
+        const reply = data?.choices?.[0]?.message?.content;
 
         if (!reply) {
-          return new Response(
-            JSON.stringify({
-              error: "The model returned an empty response."
-            }),
-            {
-              status: 500,
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
+          return json(
+            { error: "The model returned an empty response." },
+            500
           );
         }
 
-        return new Response(
-          JSON.stringify({
-            reply: reply
-          }),
-          {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }
-        );
+        return json({ reply });
 
       } catch (error) {
-        return new Response(
-          JSON.stringify({
-            error: error?.message || "Server error."
-          }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }
+        return json(
+          { error: error?.message || "Server error." },
+          500
         );
       }
     }
 
-    // Test page
-    return new Response(
-      "Violet AI Worker is running.",
-      {
-        status: 200,
-        headers: {
-          "Content-Type": "text/plain"
+    // Show Violet HTML
+    if (request.method === "GET") {
+      return new Response(
+        <!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Violet AI</title>
+</head>
+<body>
+<h1>Violet AI</h1>
+<p>Cloudflare Worker is connected.</p>
+</body>
+</html>,
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "text/html; charset=UTF-8"
+          }
         }
-      }
-    );
+      );
+    }
+
+    return json({ error: "Method not allowed." }, 405);
   }
 };
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  });
+}
