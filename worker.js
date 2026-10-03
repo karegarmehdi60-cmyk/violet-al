@@ -79,18 +79,14 @@ export default {
       }
     }
 
-    // Serve Violet frontend
-    if (request.method === "GET") {
+    // Open Violet frontend from violet_grok folder
+    if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
-        new URL("/violet_ai_frontend.html", request.url),
+        new URL("/violet_grok/violet_ai_frontend.html", request.url),
         request
       );
 
-      const assetResponse = await env.ASSETS.fetch(assetRequest);
-
-      if (assetResponse.status !== 404) {
-        return assetResponse;
-      }
+      return env.ASSETS.fetch(assetRequest);
     }
 
     return new Response("Not Found", {
