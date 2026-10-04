@@ -2,7 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Test Cloudflare → Render → OpenRouter
+    // Test Cloudflare -> Render -> OpenRouter
     if (request.method === "GET" && url.pathname === "/api/test-render") {
       try {
         const response = await fetch(
@@ -18,14 +18,18 @@ export default {
           }
         );
 
-        const text = await response.text();
+        const responseText = await response.text();
 
         return new Response(
-          JSON.stringify({
-            cloudflare: "OK",
-            renderStatus: response.status,
-            renderResponse: text
-          }, null, 2),
+          JSON.stringify(
+            {
+              cloudflare: "OK",
+              renderStatus: response.status,
+              renderResponse: responseText
+            },
+            null,
+            2
+          ),
           {
             status: 200,
             headers: {
@@ -33,13 +37,16 @@ export default {
             }
           }
         );
-
       } catch (error) {
         return new Response(
-          JSON.stringify({
-            cloudflare: "OK",
-            error: error?.message || String(error)
-          }, null, 2),
+          JSON.stringify(
+            {
+              cloudflare: "OK",
+              error: error.message || String(error)
+            },
+            null,
+            2
+          ),
           {
             status: 500,
             headers: {
@@ -54,7 +61,7 @@ export default {
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
-        const message = String(body?.message || "").trim();
+        const message = String(body.message || "").trim();
 
         if (!message) {
           return json({ error: "Message is empty." }, 400);
@@ -67,30 +74,48 @@ export default {
             headers: {
               "Content-Type": "application/json"
             },
-            body: JSON.stringify({ message })
+            body: JSON.stringify({
+              message: message
+            })
           }
         );
 
-        const data = await response.json();
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          data = {
+            error: responseText
+          };
+        }
 
         if (!response.ok) {
-          return json({
-            error: "Render request failed.",
-            status: response.status,
-            details: data?.error  data?.details  data
-          }, 502);
+          return json(
+            {
+              error: "Render request failed.",
+              status: response.status,
+              details: data.error  data.details  "Unknown Render error."
+            },
+            502
+          );
         }
 
         return json(data);
-
       } catch (error) {
-        return json({
-          error: "Cloudflare proxy error.",
-          details: error?.message || String(error)
-        }, 500);
+        return json(
+          {
+            error: "Cloudflare proxy error.",
+            details: error.message || String(error)
+          },
+          500
+        );
       }
     }
 
+    // Violet frontend
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
@@ -103,14 +128,17 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
+    // Status
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
-        proxy: "Cloudflare → Render"
+        proxy: "Cloudflare -> Render"
       });
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", {
+      status: 404
+    });
   }
 };
 
@@ -118,7 +146,7 @@ function json(data, status = 200) {
   return new Response(
     JSON.stringify(data, null, 2),
     {
-      status,
+      status: status,
       headers: {
         "Content-Type": "application/json; charset=UTF-8"
       }
