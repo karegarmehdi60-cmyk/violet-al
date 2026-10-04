@@ -2,9 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // =========================
-    // Violet AI Chat
-    // =========================
+    // Chat endpoint
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -28,17 +26,14 @@ export default {
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
-
             headers: {
               "Content-Type": "application/json",
               "Authorization": "Bearer " + env.OPENROUTER_API_KEY,
               "HTTP-Referer": url.origin,
               "X-Title": "Violet AI"
             },
-
             body: JSON.stringify({
               model: "openrouter/free",
-
               messages: [
                 {
                   role: "system",
@@ -48,13 +43,11 @@ export default {
                     "Reply in the same language as the user. " +
                     "If the user asks who created you, answer: Maziar M.K."
                 },
-
                 {
                   role: "user",
                   content: message
                 }
               ],
-
               temperature: 0.7
             })
           }
@@ -62,7 +55,6 @@ export default {
 
         const data = await response.json();
 
-        // OpenRouter error
         if (!response.ok) {
           return json(
             {
@@ -89,9 +81,7 @@ export default {
           );
         }
 
-        return json({
-          reply: reply
-        });
+        return json({ reply });
 
       } catch (error) {
         return json(
@@ -104,9 +94,7 @@ export default {
       }
     }
 
-    // =========================
-    // Violet AI Homepage
-    // =========================
+    // Serve Violet AI frontend
     if (
       request.method === "GET" &&
       url.pathname === "/"
@@ -122,9 +110,7 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    // =========================
-    // Status test
-    // =========================
+    // Status endpoint
     if (
       request.method === "GET" &&
       url.pathname === "/api/status"
@@ -143,15 +129,11 @@ export default {
   }
 };
 
-
-// =========================
-// JSON helper
-// =========================
 function json(data, status = 200) {
   return new Response(
     JSON.stringify(data, null, 2),
     {
-      status: status,
+      status,
       headers: {
         "Content-Type":
           "application/json; charset=UTF-8"
