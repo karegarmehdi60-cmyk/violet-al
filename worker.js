@@ -2,6 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // Send chat requests through Cloudflare to Render
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -11,89 +12,36 @@ export default {
           return json({ error: "Message is empty." }, 400);
         }
 
-        if (!env.OPENROUTER_API_KEY) {
+        const renderResponse = await fetch(
+          "https://violet-al-1.onrender.com/chat",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ message })
+          }
+        );
+
+        const data = await renderResponse.json();
+
+        if (!renderResponse.ok) {
           return json(
-            { error: "OPENROUTER_API_KEY is not configured." },
-            500
+            {
+              error: "Render request failed.",
+              status: renderResponse.status,
+              details: data?.error || "Unknown Render error."
+            },
+            502
           );
         }
 
-        const messages = [
-          {
-            role: "system",
-            content:
-              "You are Violet AI, a helpful and friendly AI assistant. " +
-              "Answer clearly and naturally. " +
-              "Reply in the same language as the user. " +
-              "If the user asks who created you, answer: Maziar M.K."
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ];
-
-        // Try the request up to 3 times
-        let lastError = null;
-
-        for (let attempt = 1; attempt <= 3; attempt++) {
-          try {
-            const response = await fetch(
-              "https://openrouter.ai/api/v1/chat/completions",
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization":
-                    "Bearer " + env.OPENROUTER_API_KEY,
-                  "HTTP-Referer": url.origin,
-                  "X-Title": "Violet AI"
-                },
-                body: JSON.stringify({
-                  model: "openrouter/free",
-                  messages,
-                  temperature: 0.7
-                })
-              }
-            );
-
-            const data = await response.json();
-
-            if (response.ok) {
-              const reply =
-                data?.choices?.[0]?.message?.content;
-
-              if (reply) {
-                return json({ reply });
-              }
-            }
-
-            lastError =
-              data?.error?.message ||
-              data?.error?.code ||
-              "OpenRouter request failed.";
-
-          } catch (error) {
-            lastError = error?.message || String(error);
-          }
-
-          if (attempt < 3) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        }
-
-        return json(
-          {
-            error: "OpenRouter request failed.",
-            details: lastError
-          },
-          502
-        );
+        return json(data);
 
       } catch (error) {
         return json(
           {
-            error: "Worker error.",
+            error: "Cloudflare proxy error.",
             details: error?.message || String(error)
           },
           500
@@ -101,6 +49,7 @@ export default {
       }
     }
 
+    // Serve Violet AI frontend
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
@@ -113,10 +62,11 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
+    // Status
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
-        secretConfigured: Boolean(env.OPENROUTER_API_KEY)
+        proxy: "Cloudflare → Render"
       });
     }
 
