@@ -2,112 +2,102 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/api/test-render") {
-      try {
-        const response = await fetch(
-          "https://violet-al-1.onrender.com/chat",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              message: "Hello, this is a test."
-            })
-          }
-        );
-
-        const responseText = await response.text();
-
-        return new Response(
-          JSON.stringify({
-            cloudflare: "OK",
-            renderStatus: response.status,
-            renderResponse: responseText
-          }),
-          {
-            status: 200,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }
-        );
-      } catch (error) {
-        return new Response(
-          JSON.stringify({
-            cloudflare: "OK",
-            error: String(error)
-          }),
-          {
-            status: 500,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          }
-        );
-      }
+    if (request.method === "GET" && url.pathname === "/api/status") {
+      return json({
+        ok: true,
+        provider: "Groq",
+        model: "openai/gpt-oss-120b"
+      });
     }
 
-    if (request.method === "POST" && url.pathname === "/chat") {
+    if (request.method === "POST" &&
+        (url.pathname === "/chat" || url.pathname === "/api/chat")) {
       try {
         const body = await request.json();
-        const message = String(body.message || "").trim();
 
-        if (!message) {
+        let messages = [];
+
+        if (Array.isArray(body.messages)) {
+          messages = body.messages
+            .filter(
+              m =>
+                m &&
+                (m.role === "user" || m.role === "assistant") &&
+                typeof m.content === "string"
+            )
+            .slice(-30);
+        } else if (typeof body.message === "string") {
+          messages = [
+            {
+              role: "user",
+              content: body.message
+            }
+          ];
+        }
+
+        if (!messages.length) {
           return json({ error: "Message is empty." }, 400);
         }
 
+        if (!env.GROQ_API_KEY) {
+          return json(
+            { error: "GROQ_API_KEY is not configured." },
+            500
+          );
+        }
+
         const response = await fetch(
-          "https://violet-al-1.onrender.com/chat",
+          "https://api.groq.com/openai/v1/chat/completions",
           {
             method: "POST",
             headers: {
+              "Authorization": Bearer ${env.GROQ_API_KEY},
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              message: message
+              model: "openai/gpt-oss-120b",
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are Violet AI, a helpful and friendly AI assistant. " +
+                    "Reply in the same language as the user. " +
+                    "Answer clearly and naturally. " +
+                    "If asked who created you, answer: Maziar M.K."
+                },
+                ...messages
+              ],
+              temperature: 0.7
             })
           }
         );
 
-        const responseText = await response.text();
-
-        let data;
-
-        try {
-          data = JSON.parse(responseText);
-        } catch (error) {
-          data = {
-            error: responseText
-          };
-        }
+        const data = await response.json();
 
         if (!response.ok) {
-          let details = "Unknown Render error.";
-
-          if (data.error) {
-            details = data.error;
-          }
-
-          if (data.details) {
-            details = data.details;
-          }
-
           return json(
             {
-              error: "Render request failed.",
-              status: response.status,
-              details: details
+              error: "Groq request failed.",
+              details: data
             },
             502
           );
         }
 
-        return json(data, 200);
+        const reply = data.choices?.[0]?.message?.content;
+
+        if (!reply) {
+          return json(
+            { error: "Groq returned an empty response." },
+            502
+          );
+        }
+
+        return json({ reply }, 200);
       } catch (error) {
         return json(
           {
-            error: "Cloudflare proxy error.",
+            error: "Cloudflare Worker error.",
             details: String(error)
           },
           500
@@ -117,37 +107,22 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
-        new URL(
-          "/violet_grok/violet_ai_frontend.html",
-          request.url
-        ),
+        new URL("/violet_grok/violet_ai_frontend.html", request.url),
         request
       );
 
       return env.ASSETS.fetch(assetRequest);
     }
 
-    if (request.method === "GET" && url.pathname === "/api/status") {
-      return json({
-        ok: true,
-        proxy: "Cloudflare -> Render"
-      });
-    }
-
-    return new Response("Not Found", {
-      status: 404
-    });
+    return new Response("Not Found", { status: 404 });
   }
 };
 
-function json(data, status) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status: status,
-      headers: {
-        "Content-Type": "application/json"
-      }
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json"
     }
-  );
+  });
 }
