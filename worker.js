@@ -2,17 +2,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Chat endpoint
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
         const message = String(body?.message || "").trim();
 
         if (!message) {
-          return json(
-            { error: "Message is empty." },
-            400
-          );
+          return json({ error: "Message is empty." }, 400);
         }
 
         if (!env.OPENROUTER_API_KEY) {
@@ -22,66 +18,77 @@ export default {
           );
         }
 
-        const response = await fetch(
-          "https://openrouter.ai/api/v1/chat/completions",
+        const messages = [
           {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": "Bearer " + env.OPENROUTER_API_KEY,
-              "HTTP-Referer": url.origin,
-              "X-Title": "Violet AI"
-            },
-            body: JSON.stringify({
-              model: "openrouter/free",
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are Violet AI, a helpful and friendly AI assistant. " +
-                    "Answer clearly and naturally. " +
-                    "Reply in the same language as the user. " +
-                    "If the user asks who created you, answer: Maziar M.K."
-                },
-                {
-                  role: "user",
-                  content: message
-                }
-              ],
-              temperature: 0.7
-            })
+            role: "system",
+            content:
+              "You are Violet AI, a helpful and friendly AI assistant. " +
+              "Answer clearly and naturally. " +
+              "Reply in the same language as the user. " +
+              "If the user asks who created you, answer: Maziar M.K."
+          },
+          {
+            role: "user",
+            content: message
           }
+        ];
+
+        // Try the request up to 3 times
+        let lastError = null;
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            const response = await fetch(
+              "https://openrouter.ai/api/v1/chat/completions",
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization":
+                    "Bearer " + env.OPENROUTER_API_KEY,
+                  "HTTP-Referer": url.origin,
+                  "X-Title": "Violet AI"
+                },
+                body: JSON.stringify({
+                  model: "openrouter/free",
+                  messages,
+                  temperature: 0.7
+                })
+              }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+              const reply =
+                data?.choices?.[0]?.message?.content;
+
+              if (reply) {
+                return json({ reply });
+              }
+            }
+
+            lastError =
+              data?.error?.message ||
+              data?.error?.code ||
+              "OpenRouter request failed.";
+
+          } catch (error) {
+            lastError = error?.message || String(error);
+          }
+
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+
+        return json(
+          {
+            error: "OpenRouter request failed.",
+            details: lastError
+          },
+          502
         );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          return json(
-            {
-              error: "OpenRouter request failed.",
-              status: response.status,
-              details:
-                data?.error?.message ||
-                data?.error?.code ||
-                "Unknown OpenRouter error."
-            },
-            502
-          );
-        }
-
-        const reply =
-          data?.choices?.[0]?.message?.content;
-
-        if (!reply) {
-          return json(
-            {
-              error: "OpenRouter returned an empty response."
-            },
-            502
-          );
-        }
-
-        return json({ reply });
 
       } catch (error) {
         return json(
@@ -94,11 +101,7 @@ export default {
       }
     }
 
-    // Serve Violet AI frontend
-    if (
-      request.method === "GET" &&
-      url.pathname === "/"
-    ) {
+    if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
           "/violet_grok/violet_ai_frontend.html",
@@ -110,16 +113,10 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    // Status endpoint
-    if (
-      request.method === "GET" &&
-      url.pathname === "/api/status"
-    ) {
+    if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
-        secretConfigured: Boolean(
-          env.OPENROUTER_API_KEY
-        )
+        secretConfigured: Boolean(env.OPENROUTER_API_KEY)
       });
     }
 
@@ -135,8 +132,7 @@ function json(data, status = 200) {
     {
       status,
       headers: {
-        "Content-Type":
-          "application/json; charset=UTF-8"
+        "Content-Type": "application/json; charset=UTF-8"
       }
     }
   );
