@@ -2,7 +2,6 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Test Cloudflare -> Render -> OpenRouter
     if (request.method === "GET" && url.pathname === "/api/test-render") {
       try {
         const response = await fetch(
@@ -13,7 +12,7 @@ export default {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              message: "سلام، فقط یک تست کوتاه انجام بده."
+              message: "Hello, this is a test."
             })
           }
         );
@@ -21,43 +20,34 @@ export default {
         const responseText = await response.text();
 
         return new Response(
-          JSON.stringify(
-            {
-              cloudflare: "OK",
-              renderStatus: response.status,
-              renderResponse: responseText
-            },
-            null,
-            2
-          ),
+          JSON.stringify({
+            cloudflare: "OK",
+            renderStatus: response.status,
+            renderResponse: responseText
+          }),
           {
             status: 200,
             headers: {
-              "Content-Type": "application/json; charset=UTF-8"
+              "Content-Type": "application/json"
             }
           }
         );
       } catch (error) {
         return new Response(
-          JSON.stringify(
-            {
-              cloudflare: "OK",
-              error: error.message || String(error)
-            },
-            null,
-            2
-          ),
+          JSON.stringify({
+            cloudflare: "OK",
+            error: String(error)
+          }),
           {
             status: 500,
             headers: {
-              "Content-Type": "application/json; charset=UTF-8"
+              "Content-Type": "application/json"
             }
           }
         );
       }
     }
 
-    // Normal chat
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -86,36 +76,45 @@ export default {
 
         try {
           data = JSON.parse(responseText);
-        } catch {
+        } catch (error) {
           data = {
             error: responseText
           };
         }
 
         if (!response.ok) {
+          let details = "Unknown Render error.";
+
+          if (data.error) {
+            details = data.error;
+          }
+
+          if (data.details) {
+            details = data.details;
+          }
+
           return json(
             {
               error: "Render request failed.",
               status: response.status,
-              details: data.error  data.details  "Unknown Render error."
+              details: details
             },
             502
           );
         }
 
-        return json(data);
+        return json(data, 200);
       } catch (error) {
         return json(
           {
             error: "Cloudflare proxy error.",
-            details: error.message || String(error)
+            details: String(error)
           },
           500
         );
       }
     }
 
-    // Violet frontend
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
@@ -128,7 +127,6 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    // Status
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
@@ -142,13 +140,13 @@ export default {
   }
 };
 
-function json(data, status = 200) {
+function json(data, status) {
   return new Response(
-    JSON.stringify(data, null, 2),
+    JSON.stringify(data),
     {
       status: status,
       headers: {
-        "Content-Type": "application/json; charset=UTF-8"
+        "Content-Type": "application/json"
       }
     }
   );
