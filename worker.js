@@ -2,7 +2,9 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Violet AI chat
+    // =========================
+    // Violet AI - Chat API
+    // =========================
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -12,20 +14,26 @@ export default {
           return json({ error: "Message is empty." }, 400);
         }
 
+        // Check Cloudflare Secret
         if (!env.OPENROUTER_API_KEY) {
           return json(
-            { error: "OPENROUTER_API_KEY is not configured." },
+            {
+              error: "OPENROUTER_API_KEY is not configured."
+            },
             500
           );
         }
 
-        const response = await fetch(
+        // Send request to OpenRouter
+        const openRouterResponse = await fetch(
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
             headers: {
+              "Authorization": Bearer ${env.OPENROUTER_API_KEY},
               "Content-Type": "application/json",
-              "Authorization": "Bearer " + env.OPENROUTER_API_KEY
+              "HTTP-Referer": url.origin,
+              "X-Title": "Violet AI"
             },
             body: JSON.stringify({
               model: "openrouter/free",
@@ -48,16 +56,21 @@ export default {
           }
         );
 
-        const data = await response.json();
+        const data = await openRouterResponse.json();
 
-        if (!response.ok) {
+        // IMPORTANT:
+        // Return the REAL OpenRouter error instead of hiding it.
+        if (!openRouterResponse.ok) {
           return json(
             {
-              error:
+              error: "OpenRouter request failed.",
+              status: openRouterResponse.status,
+              details:
                 data?.error?.message ||
-                "OpenRouter request failed."
+                data?.error?.code ||
+                JSON.stringify(data)
             },
-            response.status
+            502
           );
         }
 
@@ -65,28 +78,50 @@ export default {
 
         if (!reply) {
           return json(
-            { error: "The model returned an empty response." },
-            500
+            {
+              error: "OpenRouter returned no reply.",
+              details: JSON.stringify(data)
+            },
+            502
           );
         }
 
-        return json({ reply });
+        return json({
+          reply
+        });
+
       } catch (error) {
         return json(
-          { error: error?.message || "Server error." },
+          {
+            error: "Worker error.",
+            details: error?.message || String(error)
+          },
           500
         );
       }
     }
 
-    // Open Violet frontend from violet_grok folder
+    // =========================
+    // Violet AI Frontend
+    // =========================
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
-        new URL("/violet_grok/violet_ai_frontend.html", request.url),
+        new URL(
+          "/violet_grok/violet_ai_frontend.html",
+          request.url
+        ),
         request
       );
 
       return env.ASSETS.fetch(assetRequest);
+    }
+
+    // Optional health check
+    if (request.method === "GET" && url.pathname === "/api/status") {
+      return json({
+        ok: true,
+        secretConfigured: Boolean(env.OPENROUTER_API_KEY)
+      });
     }
 
     return new Response("Not Found", {
@@ -96,10 +131,11 @@ export default {
 };
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
+  return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: {
-      "Content-Type": "application/json; charset=UTF-8"
+      "Content-Type": "application/json; charset=UTF-8",
+      "Access-Control-Allow-Origin": "*"
     }
   });
 }
