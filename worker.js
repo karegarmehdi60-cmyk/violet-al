@@ -1,65 +1,161 @@
-13:41:07.058
-Initializing build environment...
-13:41:34.166
-Success: Finished initializing build environment
-13:41:34.667
-Cloning repository...
-13:41:35.518
-No build output detected to cache. Skipping.
-13:41:35.518
-No dependencies detected to cache. Skipping.
-13:41:35.519
-Detected the following tools from environment: 
-13:41:35.729
-Executing user deploy command: printf '%s' "$OPENROUTER_API_KEY" | npx wrangler secret put OPENROUTER_API_KEY && npx wrangler deploy
-13:41:37.203
-npm warn exec The following package was not found and will be installed: wrangler@4.147.0
-13:41:44.690
-13:41:44.690
- ⛅️ wrangler 4.147.0
-13:41:44.690
-────────────────────
-13:41:44.717
-🌀 Creating the secret for the Worker "violet-al"
-13:41:45.175
-✨ Success! Uploaded secret OPENROUTER_API_KEY
-13:41:46.913
-13:41:46.915
- ⛅️ wrangler 4.147.0
-13:41:46.916
-────────────────────
-13:41:46.940
-13:41:46.940
-Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md
-13:41:47.030
-13:41:47.096
-✘ [ERROR] Build failed with 1 error:
-13:41:47.097
-13:41:47.097
-  ✘ [ERROR] Expected "}" but found "$"
-13:41:47.097
-  
-13:41:47.097
-      worker.js:33:38:
-13:41:47.097
-        33 │               "Authorization": Bearer ${env.OPENROUTER_API_KEY},
-13:41:47.097
-           │                                       ^
-13:41:47.097
-           ╵                                       }
-13:41:47.098
-  
-13:41:47.098
-  
-13:41:47.098
-13:41:47.098
-13:41:47.128
-🪵  Logs were written to "/opt/buildhome/.config/.wrangler/logs/wrangler-2026-10-04_10-11-46_632.log"
-13:41:47.210
-Failed: error occurred while running deploy command
-Support
-System status
-Careers
-Terms of Use
-Report Security Issues
-Privacy Policy
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    // =========================
+    // Violet AI Chat
+    // =========================
+    if (request.method === "POST" && url.pathname === "/chat") {
+      try {
+        const body = await request.json();
+        const message = String(body?.message || "").trim();
+
+        if (!message) {
+          return json(
+            { error: "Message is empty." },
+            400
+          );
+        }
+
+        if (!env.OPENROUTER_API_KEY) {
+          return json(
+            { error: "OPENROUTER_API_KEY is not configured." },
+            500
+          );
+        }
+
+        const response = await fetch(
+          "https://openrouter.ai/api/v1/chat/completions",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + env.OPENROUTER_API_KEY,
+              "HTTP-Referer": url.origin,
+              "X-Title": "Violet AI"
+            },
+
+            body: JSON.stringify({
+              model: "openrouter/free",
+
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "You are Violet AI, a helpful and friendly AI assistant. " +
+                    "Answer clearly and naturally. " +
+                    "Reply in the same language as the user. " +
+                    "If the user asks who created you, answer: Maziar M.K."
+                },
+
+                {
+                  role: "user",
+                  content: message
+                }
+              ],
+
+              temperature: 0.7
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        // OpenRouter error
+        if (!response.ok) {
+          return json(
+            {
+              error: "OpenRouter request failed.",
+              status: response.status,
+              details:
+                data?.error?.message ||
+                data?.error?.code ||
+                "Unknown OpenRouter error."
+            },
+            502
+          );
+        }
+
+        const reply =
+          data?.choices?.[0]?.message?.content;
+
+        if (!reply) {
+          return json(
+            {
+              error: "OpenRouter returned an empty response."
+            },
+            502
+          );
+        }
+
+        return json({
+          reply: reply
+        });
+
+      } catch (error) {
+        return json(
+          {
+            error: "Worker error.",
+            details: error?.message || String(error)
+          },
+          500
+        );
+      }
+    }
+
+    // =========================
+    // Violet AI Homepage
+    // =========================
+    if (
+      request.method === "GET" &&
+      url.pathname === "/"
+    ) {
+      const assetRequest = new Request(
+        new URL(
+          "/violet_grok/violet_ai_frontend.html",
+          request.url
+        ),
+        request
+      );
+
+      return env.ASSETS.fetch(assetRequest);
+    }
+
+    // =========================
+    // Status test
+    // =========================
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/status"
+    ) {
+      return json({
+        ok: true,
+        secretConfigured: Boolean(
+          env.OPENROUTER_API_KEY
+        )
+      });
+    }
+
+    return new Response("Not Found", {
+      status: 404
+    });
+  }
+};
+
+
+// =========================
+// JSON helper
+// =========================
+function json(data, status = 200) {
+  return new Response(
+    JSON.stringify(data, null, 2),
+    {
+      status: status,
+      headers: {
+        "Content-Type":
+          "application/json; charset=UTF-8"
+      }
+    }
+  );
+}
