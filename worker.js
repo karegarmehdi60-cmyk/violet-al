@@ -2,9 +2,6 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // =========================
-    // Violet AI - Chat API
-    // =========================
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -14,24 +11,19 @@ export default {
           return json({ error: "Message is empty." }, 400);
         }
 
-        // Check Cloudflare Secret
         if (!env.OPENROUTER_API_KEY) {
-          return json(
-            {
-              error: "OPENROUTER_API_KEY is not configured."
-            },
-            500
-          );
+          return json({
+            error: "OPENROUTER_API_KEY is not configured."
+          }, 500);
         }
 
-        // Send request to OpenRouter
-        const openRouterResponse = await fetch(
+        const response = await fetch(
           "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
             headers: {
-              "Authorization": Bearer ${env.OPENROUTER_API_KEY},
               "Content-Type": "application/json",
+              "Authorization": "Bearer " + env.OPENROUTER_API_KEY,
               "HTTP-Referer": url.origin,
               "X-Title": "Violet AI"
             },
@@ -56,54 +48,38 @@ export default {
           }
         );
 
-        const data = await openRouterResponse.json();
+        const data = await response.json();
 
-        // IMPORTANT:
-        // Return the REAL OpenRouter error instead of hiding it.
-        if (!openRouterResponse.ok) {
-          return json(
-            {
-              error: "OpenRouter request failed.",
-              status: openRouterResponse.status,
-              details:
-                data?.error?.message ||
-                data?.error?.code ||
-                JSON.stringify(data)
-            },
-            502
-          );
+        if (!response.ok) {
+          return json({
+            error: "OpenRouter request failed.",
+            status: response.status,
+            details:
+              data?.error?.message ||
+              data?.error?.code ||
+              JSON.stringify(data)
+          }, 502);
         }
 
         const reply = data?.choices?.[0]?.message?.content;
 
         if (!reply) {
-          return json(
-            {
-              error: "OpenRouter returned no reply.",
-              details: JSON.stringify(data)
-            },
-            502
-          );
+          return json({
+            error: "OpenRouter returned no reply.",
+            details: JSON.stringify(data)
+          }, 502);
         }
 
-        return json({
-          reply
-        });
+        return json({ reply });
 
       } catch (error) {
-        return json(
-          {
-            error: "Worker error.",
-            details: error?.message || String(error)
-          },
-          500
-        );
+        return json({
+          error: "Worker error.",
+          details: error?.message || String(error)
+        }, 500);
       }
     }
 
-    // =========================
-    // Violet AI Frontend
-    // =========================
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
@@ -116,7 +92,6 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    // Optional health check
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
@@ -134,8 +109,7 @@ function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
     status,
     headers: {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Access-Control-Allow-Origin": "*"
+      "Content-Type": "application/json; charset=UTF-8"
     }
   });
 }
