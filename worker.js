@@ -10,21 +10,23 @@ export default {
       });
     }
 
-    if (request.method === "POST" &&
-        (url.pathname === "/chat" || url.pathname === "/api/chat")) {
+    if (
+      request.method === "POST" &&
+      (url.pathname === "/chat" || url.pathname === "/api/chat")
+    ) {
       try {
         const body = await request.json();
-
         let messages = [];
 
         if (Array.isArray(body.messages)) {
           messages = body.messages
-            .filter(
-              m =>
+            .filter(function (m) {
+              return (
                 m &&
                 (m.role === "user" || m.role === "assistant") &&
                 typeof m.content === "string"
-            )
+              );
+            })
             .slice(-30);
         } else if (typeof body.message === "string") {
           messages = [
@@ -51,7 +53,7 @@ export default {
           {
             method: "POST",
             headers: {
-              "Authorization": Bearer ${env.GROQ_API_KEY},
+              "Authorization": "Bearer " + env.GROQ_API_KEY,
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -64,9 +66,8 @@ export default {
                     "Reply in the same language as the user. " +
                     "Answer clearly and naturally. " +
                     "If asked who created you, answer: Maziar M.K."
-                },
-                ...messages
-              ],
+                }
+              ].concat(messages),
               temperature: 0.7
             })
           }
@@ -84,7 +85,11 @@ export default {
           );
         }
 
-        const reply = data.choices?.[0]?.message?.content;
+        const reply =
+          data.choices &&
+          data.choices[0] &&
+          data.choices[0].message &&
+          data.choices[0].message.content;
 
         if (!reply) {
           return json(
@@ -93,7 +98,7 @@ export default {
           );
         }
 
-        return json({ reply }, 200);
+        return json({ reply: reply }, 200);
       } catch (error) {
         return json(
           {
@@ -107,20 +112,25 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
-        new URL("/violet_grok/violet_ai_frontend.html", request.url),
+        new URL(
+          "/violet_grok/violet_ai_frontend.html",
+          request.url
+        ),
         request
       );
 
       return env.ASSETS.fetch(assetRequest);
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", {
+      status: 404
+    });
   }
 };
 
-function json(data, status = 200) {
+function json(data, status) {
   return new Response(JSON.stringify(data), {
-    status,
+    status: status || 200,
     headers: {
       "Content-Type": "application/json"
     }
