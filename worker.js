@@ -2,7 +2,55 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Send chat requests through Cloudflare to Render
+    // Test Cloudflare → Render → OpenRouter
+    if (request.method === "GET" && url.pathname === "/api/test-render") {
+      try {
+        const response = await fetch(
+          "https://violet-al-1.onrender.com/chat",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: "سلام، فقط یک تست کوتاه انجام بده."
+            })
+          }
+        );
+
+        const text = await response.text();
+
+        return new Response(
+          JSON.stringify({
+            cloudflare: "OK",
+            renderStatus: response.status,
+            renderResponse: text
+          }, null, 2),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json; charset=UTF-8"
+            }
+          }
+        );
+
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            cloudflare: "OK",
+            error: error?.message || String(error)
+          }, null, 2),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json; charset=UTF-8"
+            }
+          }
+        );
+      }
+    }
+
+    // Normal chat
     if (request.method === "POST" && url.pathname === "/chat") {
       try {
         const body = await request.json();
@@ -12,7 +60,7 @@ export default {
           return json({ error: "Message is empty." }, 400);
         }
 
-        const renderResponse = await fetch(
+        const response = await fetch(
           "https://violet-al-1.onrender.com/chat",
           {
             method: "POST",
@@ -23,33 +71,26 @@ export default {
           }
         );
 
-        const data = await renderResponse.json();
+        const data = await response.json();
 
-        if (!renderResponse.ok) {
-          return json(
-            {
-              error: "Render request failed.",
-              status: renderResponse.status,
-              details: data?.error || "Unknown Render error."
-            },
-            502
-          );
+        if (!response.ok) {
+          return json({
+            error: "Render request failed.",
+            status: response.status,
+            details: data?.error  data?.details  data
+          }, 502);
         }
 
         return json(data);
 
       } catch (error) {
-        return json(
-          {
-            error: "Cloudflare proxy error.",
-            details: error?.message || String(error)
-          },
-          500
-        );
+        return json({
+          error: "Cloudflare proxy error.",
+          details: error?.message || String(error)
+        }, 500);
       }
     }
 
-    // Serve Violet AI frontend
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
@@ -62,7 +103,6 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    // Status
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
@@ -70,9 +110,7 @@ export default {
       });
     }
 
-    return new Response("Not Found", {
-      status: 404
-    });
+    return new Response("Not Found", { status: 404 });
   }
 };
 
