@@ -2,14 +2,17 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // Status test
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
         provider: "Groq",
-        model: "openai/gpt-oss-120b"
+        model: "openai/gpt-oss-120b",
+        keyConfigured: Boolean(env.GROQ_API_KEY)
       });
     }
 
+    // Chat
     if (
       request.method === "POST" &&
       (url.pathname === "/chat" || url.pathname === "/api/chat")
@@ -38,7 +41,10 @@ export default {
         }
 
         if (!messages.length) {
-          return json({ error: "Message is empty." }, 400);
+          return json(
+            { error: "Message is empty." },
+            400
+          );
         }
 
         if (!env.GROQ_API_KEY) {
@@ -98,7 +104,10 @@ export default {
           );
         }
 
-        return json({ reply: reply }, 200);
+        return json(
+          { reply: reply },
+          200
+        );
       } catch (error) {
         return json(
           {
@@ -110,6 +119,7 @@ export default {
       }
     }
 
+    // Violet frontend
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
         new URL(
@@ -122,17 +132,21 @@ export default {
       return env.ASSETS.fetch(assetRequest);
     }
 
-    return new Response("Not Found", {
-      status: 404
-    });
+    return new Response(
+      "Not Found",
+      { status: 404 }
+    );
   }
 };
 
 function json(data, status) {
-  return new Response(JSON.stringify(data), {
-    status: status || 200,
-    headers: {
-      "Content-Type": "application/json"
+  return new Response(
+    JSON.stringify(data),
+    {
+      status: status || 200,
+      headers: {
+        "Content-Type": "application/json"
+      }
     }
-  });
+  );
 }
