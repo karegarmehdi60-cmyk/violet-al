@@ -92,7 +92,11 @@ export default {
                 data.error.message
                   ? data.error.message
                   : "Groq request failed.",
-              status: response.status
+              status: response.status,
+              details:
+                data && data.error
+                  ? data.error
+                  : null
             },
             response.status
           );
@@ -113,6 +117,7 @@ export default {
         }
 
         return json({ reply: reply });
+
       } catch (error) {
         return json(
           {
@@ -154,7 +159,8 @@ function json(data, status) {
       headers: {
         "Content-Type":
           "application/json; charset=UTF-8",
-        "Cache-Control": "no-store"
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*"
       }
     }
   );
