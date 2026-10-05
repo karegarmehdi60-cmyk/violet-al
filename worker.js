@@ -3,15 +3,11 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/api/status") {
-      return new Response(JSON.stringify({
+      return json({
         ok: true,
         provider: "Groq",
         model: "openai/gpt-oss-120b",
         keyConfigured: Boolean(env.GROQ_API_KEY)
-      }), {
-        headers: {
-          "Content-Type": "application/json"
-        }
       });
     }
 
@@ -19,17 +15,6 @@ export default {
       request.method === "POST" &&
       (url.pathname === "/chat" || url.pathname === "/api/chat")
     ) {
-      if (!env.GROQ_API_KEY) {
-        return new Response(JSON.stringify({
-          error: "GROQ_API_KEY is not configured."
-        }), {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
-      }
-
       try {
         const body = await request.json();
         let messages = [];
@@ -44,30 +29,27 @@ export default {
               );
             })
             .slice(-30);
-        } else if (
-          typeof body.message === "string" &&
-          body.message.trim()
-        ) {
+        } else if (typeof body.message === "string") {
           messages = [
             {
               role: "user",
-              content: body.message.trim()
+              content: body.message
             }
           ];
         }
 
         if (!messages.length) {
-          return new Response(JSON.stringify({
-            error: "Message is empty."
-          }), {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
+          return json({ error: "Message is empty." }, 400);
         }
 
-        const groqResponse = await fetch(
+        if (!env.GROQ_API_KEY) {
+          return json(
+            { error: "GROQ_API_KEY is not configured." },
+            500
+          );
+        }
+
+        const response = await fetch(
           "https://api.groq.com/openai/v1/chat/completions",
           {
             method: "POST",
@@ -81,7 +63,10 @@ export default {
                 {
                   role: "system",
                   content:
-                    "You are Violet AI. Reply in the same language as the user. If asked who created you, answer: Maziar M.K."
+                    "You are Violet AI, a helpful and friendly AI assistant. " +
+                    "Reply in the same language as the user. " +
+                    "Answer clearly and naturally. " +
+                    "If asked who created you, answer: Maziar M.K."
                 }
               ].concat(messages),
               temperature: 0.7
@@ -89,78 +74,68 @@ export default {
           }
         );
 
-        const responseText = await groqResponse.text();
+        const data = await response.json();
 
-        if (!groqResponse.ok) {
-          return new Response(JSON.stringify({
-            error: "Groq request failed.",
-            source: "groq",
-            status: groqResponse.status,
-            details: responseText
-          }), {
-            status: groqResponse.status,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
+        if (!response.ok) {
+          return json(
+            {
+              error: "Groq request failed.",
+              details: data
+            },
+            502
+          );
         }
-
-        const data = JSON.parse(responseText);
 
         const reply =
-          data &&
           data.choices &&
           data.choices[0] &&
-          data.choices[0].message
-            ? data.choices[0].message.content
-            : null;
+          data.choices[0].message &&
+          data.choices[0].message.content;
 
         if (!reply) {
-          return new Response(JSON.stringify({
-            error: "Groq returned an empty response.",
-            source: "groq"
-          }), {
-            status: 502,
-            headers: {
-              "Content-Type": "application/json"
-            }
-          });
+          return json(
+            { error: "Groq returned an empty response." },
+            502
+          );
         }
 
-        return new Response(JSON.stringify({
-          reply: reply
-        }), {
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
+        return json({ reply: reply }, 200);
 
       } catch (error) {
-        return new Response(JSON.stringify({
-          error: "Worker error.",
-          details: String(error)
-        }), {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json"
-          }
-        });
+        return json(
+          {
+            error: "Cloudflare Worker error.",
+            details: String(error)
+          },
+          500
+        );
       }
     }
 
     if (request.method === "GET" && url.pathname === "/") {
-      const assetUrl = new URL(
-        "/violet_grok/violet_ai_frontend.html",
-        request.url
+      const assetRequest = new Request(
+        new URL(
+          "/violet_grok/violet_ai_frontend.html",
+          request.url
+        ),
+        request
       );
 
-      return env.ASSETS.fetch(
-        new Request(assetUrl, request)
-      );
+      return env.ASSETS.fetch(assetRequest);
     }
 
-    return new Response("Not Found", {
-      status: 404
-    });
+    return new Response("Not Found", { status: 404 });
   }
 };
+
+function json(data, status) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status: status || 200,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    }
+  );
+}
