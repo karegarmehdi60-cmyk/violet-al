@@ -6,7 +6,7 @@ export default {
       return json({
         ok: true,
         provider: "Groq",
-        model: "openai/gpt-oss-120b",
+        model: "openai/gpt-oss-20b",
         keyConfigured: Boolean(env.GROQ_API_KEY)
       });
     }
