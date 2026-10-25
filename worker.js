@@ -2,6 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // Status check
     if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
@@ -11,6 +12,7 @@ export default {
       });
     }
 
+    // Chat endpoint
     if (
       request.method === "POST" &&
       (url.pathname === "/chat" || url.pathname === "/api/chat")
@@ -33,19 +35,22 @@ export default {
                 m &&
                 ["user", "assistant"].includes(m.role) &&
                 typeof m.content === "string" &&
-                m.content.trim()
+                m.content.trim().length > 0
             )
             .slice(-20);
         } else if (
           typeof body.message === "string" &&
-          body.message.trim()
+          body.message.trim().length > 0
         ) {
           messages = [
-            { role: "user", content: body.message.trim() }
+            {
+              role: "user",
+              content: body.message.trim()
+            }
           ];
         }
 
-        if (!messages.length) {
+        if (messages.length === 0) {
           return json({ error: "Message is empty." }, 400);
         }
 
@@ -55,7 +60,9 @@ export default {
             method: "POST",
             headers: {
               "Authorization": Bearer ${env.OPENROUTER_API_KEY},
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
+              "HTTP-Referer": url.origin,
+              "X-Title": "Violet AI"
             },
             body: JSON.stringify({
               model: "openrouter/free",
@@ -63,8 +70,9 @@ export default {
                 {
                   role: "system",
                   content:
-                    "You are Violet AI, a helpful assistant. " +
+                    "You are Violet AI, a helpful and friendly AI assistant. " +
                     "Reply in the same language as the user. " +
+                    "Answer clearly and naturally. " +
                     "If asked who created you, answer: Maziar M.K."
                 },
                 ...messages
@@ -79,7 +87,8 @@ export default {
           return json(
             {
               error:
-                data?.error?.message || "OpenRouter request failed.",
+                data?.error?.message ||
+                "OpenRouter request failed.",
               status: response.status
             },
             response.status
@@ -88,9 +97,9 @@ export default {
 
         const reply = data?.choices?.[0]?.message?.content;
 
-        if (!reply) {
+        if (typeof reply !== "string" || !reply.trim()) {
           return json(
-            { error: "The model returned an empty response." },
+            { error: "OpenRouter returned an empty response." },
             502
           );
         }
@@ -107,10 +116,14 @@ export default {
       }
     }
 
+    // Serve Violet frontend
     if (request.method === "GET" && url.pathname === "/") {
       return env.ASSETS.fetch(
         new Request(
-          new URL("/violet_grok/violet_ai_frontend.html", request.url),
+          new URL(
+            "/violet_grok/violet_ai_frontend.html",
+            request.url
+          ),
           request
         )
       );
