@@ -2,144 +2,152 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // Status check
-    if (request.method === "GET" && url.pathname === "/api/status") {
-      return json({
-        ok: true,
-        provider: "OpenRouter",
-        model: "openrouter/free",
-        keyConfigured: Boolean(env.OPENROUTER_API_KEY)
-      });
-    }
-
-    // Chat endpoint
-    if (
-      request.method === "POST" &&
-      (url.pathname === "/chat" || url.pathname === "/api/chat")
-    ) {
+    if (request.method === "GET" && url.pathname === "/api/test-render") {
       try {
-        if (!env.OPENROUTER_API_KEY) {
-          return json(
-            { error: "OPENROUTER_API_KEY is not configured." },
-            500
-          );
-        }
-
-        const body = await request.json();
-        let messages = [];
-
-        if (Array.isArray(body.messages)) {
-          messages = body.messages
-            .filter(
-              (m) =>
-                m &&
-                ["user", "assistant"].includes(m.role) &&
-                typeof m.content === "string" &&
-                m.content.trim().length > 0
-            )
-            .slice(-20);
-        } else if (
-          typeof body.message === "string" &&
-          body.message.trim().length > 0
-        ) {
-          messages = [
-            {
-              role: "user",
-              content: body.message.trim()
-            }
-          ];
-        }
-
-        if (messages.length === 0) {
-          return json({ error: "Message is empty." }, 400);
-        }
-
         const response = await fetch(
-          "https://openrouter.ai/api/v1/chat/completions",
+          "https://violet-al-1.onrender.com/chat",
           {
             method: "POST",
             headers: {
-              "Authorization": Bearer ${env.OPENROUTER_API_KEY},
-              "Content-Type": "application/json",
-              "HTTP-Referer": url.origin,
-              "X-Title": "Violet AI"
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              model: "openrouter/free",
-              messages: [
-                {
-                  role: "system",
-                  content:
-                    "You are Violet AI, a helpful and friendly AI assistant. " +
-                    "Reply in the same language as the user. " +
-                    "Answer clearly and naturally. " +
-                    "If asked who created you, answer: Maziar M.K."
-                },
-                ...messages
-              ]
+              message: "Hello, this is a test."
             })
           }
         );
 
-        const data = await response.json();
+        const responseText = await response.text();
 
-        if (!response.ok) {
-          return json(
-            {
-              error:
-                data?.error?.message ||
-                "OpenRouter request failed.",
-              status: response.status
-            },
-            response.status
-          );
+        return new Response(
+          JSON.stringify({
+            cloudflare: "OK",
+            renderStatus: response.status,
+            renderResponse: responseText
+          }),
+          {
+            status: 200,
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            cloudflare: "OK",
+            error: String(error)
+          }),
+          {
+            status: 500,
+            headers: {
+              "Content-Type": "application/json"
+            }
+          }
+        );
+      }
+    }
+
+    if (request.method === "POST" && url.pathname === "/chat") {
+      try {
+        const body = await request.json();
+        const message = String(body.message || "").trim();
+
+        if (!message) {
+          return json({ error: "Message is empty." }, 400);
         }
 
-        const reply = data?.choices?.[0]?.message?.content;
+        const response = await fetch(
+          "https://violet-al-1.onrender.com/chat",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              message: message
+            })
+          }
+        );
 
-        if (typeof reply !== "string" || !reply.trim()) {
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+          data = JSON.parse(responseText);
+        } catch (error) {
+          data = {
+            error: responseText
+          };
+        }
+
+        if (!response.ok) {
+          let details = "Unknown Render error.";
+
+          if (data.error) {
+            details = data.error;
+          }
+
+          if (data.details) {
+            details = data.details;
+          }
+
           return json(
-            { error: "OpenRouter returned an empty response." },
+            {
+              error: "Render request failed.",
+              status: response.status,
+              details: details
+            },
             502
           );
         }
 
-        return json({ reply });
+        return json(data, 200);
       } catch (error) {
         return json(
           {
-            error: "Worker error.",
-            details: String(error?.message || error)
+            error: "Cloudflare proxy error.",
+            details: String(error)
           },
           500
         );
       }
     }
 
-    // Serve Violet frontend
     if (request.method === "GET" && url.pathname === "/") {
-      return env.ASSETS.fetch(
-        new Request(
-          new URL(
-            "/violet_grok/violet_ai_frontend.html",
-            request.url
-          ),
-          request
-        )
+      const assetRequest = new Request(
+        new URL(
+          "/violet_grok/violet_ai_frontend.html",
+          request.url
+        ),
+        request
       );
+
+      return env.ASSETS.fetch(assetRequest);
     }
 
-    return new Response("Not Found", { status: 404 });
+    if (request.method === "GET" && url.pathname === "/api/status") {
+      return json({
+        ok: true,
+        proxy: "Cloudflare -> Render"
+      });
+    }
+
+    return new Response("Not Found", {
+      status: 404
+    });
   }
 };
 
-function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      "Content-Type": "application/json; charset=UTF-8",
-      "Cache-Control": "no-store",
-      "Access-Control-Allow-Origin": "*"
+function json(data, status) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status: status,
+      headers: {
+        "Content-Type": "application/json"
+      }
     }
-  });
+  );
 }
