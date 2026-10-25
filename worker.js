@@ -2,17 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: corsHeaders()
-      });
-    }
-
-    if (
-      request.method === "GET" &&
-      url.pathname === "/api/status"
-    ) {
+    if (request.method === "GET" && url.pathname === "/api/status") {
       return json({
         ok: true,
         provider: "OpenRouter",
@@ -23,14 +13,14 @@ export default {
 
     if (
       request.method === "POST" &&
-      (url.pathname === "/chat" ||
-       url.pathname === "/api/chat")
+      (url.pathname === "/chat" || url.pathname === "/api/chat")
     ) {
       try {
         if (!env.OPENROUTER_API_KEY) {
-          return json({
-            error: "OPENROUTER_API_KEY is not configured."
-          }, 500);
+          return json(
+            { error: "OPENROUTER_API_KEY is not configured." },
+            500
+          );
         }
 
         const body = await request.json();
@@ -38,21 +28,21 @@ export default {
 
         if (Array.isArray(body.messages)) {
           messages = body.messages
-            .filter(m =>
-              m &&
-              (m.role === "user" || m.role === "assistant") &&
-              typeof m.content === "string" &&
-              m.content.trim()
+            .filter(
+              (m) =>
+                m &&
+                ["user", "assistant"].includes(m.role) &&
+                typeof m.content === "string" &&
+                m.content.trim()
             )
             .slice(-20);
         } else if (
           typeof body.message === "string" &&
           body.message.trim()
         ) {
-          messages = [{
-            role: "user",
-            content: body.message.trim()
-          }];
+          messages = [
+            { role: "user", content: body.message.trim() }
+          ];
         }
 
         if (!messages.length) {
@@ -65,8 +55,7 @@ export default {
             method: "POST",
             headers: {
               "Authorization": Bearer ${env.OPENROUTER_API_KEY},
-              "Content-Type": "application/json",
-              "X-OpenRouter-Title": "Violet AI"
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               model: "openrouter/free",
@@ -74,9 +63,8 @@ export default {
                 {
                   role: "system",
                   content:
-                    "You are Violet AI, a helpful and friendly AI assistant. " +
+                    "You are Violet AI, a helpful assistant. " +
                     "Reply in the same language as the user. " +
-                    "Answer clearly and naturally. " +
                     "If asked who created you, answer: Maziar M.K."
                 },
                 ...messages
@@ -88,61 +76,57 @@ export default {
         const data = await response.json();
 
         if (!response.ok) {
-          return json({
-            error:
-              data?.error?.message ||
-              data?.message ||
-              "OpenRouter request failed.",
-            status: response.status
-          }, response.status);
+          return json(
+            {
+              error:
+                data?.error?.message || "OpenRouter request failed.",
+              status: response.status
+            },
+            response.status
+          );
         }
 
         const reply = data?.choices?.[0]?.message?.content;
 
         if (!reply) {
-          return json({
-            error: "OpenRouter returned an empty response."
-          }, 502);
+          return json(
+            { error: "The model returned an empty response." },
+            502
+          );
         }
 
         return json({ reply });
-
       } catch (error) {
-        return json({
-          error: "Worker error.",
-          details: String(error?.message || error)
-        }, 500);
+        return json(
+          {
+            error: "Worker error.",
+            details: String(error?.message || error)
+          },
+          500
+        );
       }
     }
 
     if (request.method === "GET" && url.pathname === "/") {
-      const assetRequest = new Request(
-        new URL("/violet_grok/violet_ai_frontend.html", request.url),
-        request
+      return env.ASSETS.fetch(
+        new Request(
+          new URL("/violet_grok/violet_ai_frontend.html", request.url),
+          request
+        )
       );
-
-      return env.ASSETS.fetch(assetRequest);
     }
 
     return new Response("Not Found", { status: 404 });
   }
 };
 
-function corsHeaders() {
-  return {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization"
-  };
-}
-
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
-      ...corsHeaders(),
       "Content-Type": "application/json; charset=UTF-8",
-      "Cache-Control": "no-store"
+      "Cache-Control": "no-store",
+      "Access-Control-Allow-Origin": "*"
     }
   });
 }
