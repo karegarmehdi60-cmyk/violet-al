@@ -2,25 +2,35 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/api/status") {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders()
+      });
+    }
+
+    if (
+      request.method === "GET" &&
+      url.pathname === "/api/status"
+    ) {
       return json({
         ok: true,
-        provider: "Groq",
-        model: "openai/gpt-oss-20b",
-        keyConfigured: Boolean(env.GROQ_API_KEY)
+        provider: "OpenRouter",
+        model: "openrouter/free",
+        keyConfigured: Boolean(env.OPENROUTER_API_KEY)
       });
     }
 
     if (
       request.method === "POST" &&
-      (url.pathname === "/chat" || url.pathname === "/api/chat")
+      (url.pathname === "/chat" ||
+       url.pathname === "/api/chat")
     ) {
       try {
-        if (!env.GROQ_API_KEY) {
-          return json(
-            { error: "GROQ_API_KEY is not configured." },
-            500
-          );
+        if (!env.OPENROUTER_API_KEY) {
+          return json({
+            error: "OPENROUTER_API_KEY is not configured."
+          }, 500);
         }
 
         const body = await request.json();
@@ -28,44 +38,38 @@ export default {
 
         if (Array.isArray(body.messages)) {
           messages = body.messages
-            .filter(function (m) {
-              return (
-                m &&
-                (m.role === "user" || m.role === "assistant") &&
-                typeof m.content === "string" &&
-                m.content.trim().length > 0
-              );
-            })
+            .filter(m =>
+              m &&
+              (m.role === "user" || m.role === "assistant") &&
+              typeof m.content === "string" &&
+              m.content.trim()
+            )
             .slice(-20);
         } else if (
           typeof body.message === "string" &&
           body.message.trim()
         ) {
-          messages = [
-            {
-              role: "user",
-              content: body.message.trim()
-            }
-          ];
+          messages = [{
+            role: "user",
+            content: body.message.trim()
+          }];
         }
 
         if (!messages.length) {
-          return json(
-            { error: "Message is empty." },
-            400
-          );
+          return json({ error: "Message is empty." }, 400);
         }
 
         const response = await fetch(
-          "https://api.groq.com/openai/v1/chat/completions",
+          "https://openrouter.ai/api/v1/chat/completions",
           {
             method: "POST",
             headers: {
-              "Authorization": "Bearer " + env.GROQ_API_KEY,
-              "Content-Type": "application/json"
+              "Authorization": Bearer ${env.OPENROUTER_API_KEY},
+              "Content-Type": "application/json",
+              "X-OpenRouter-Title": "Violet AI"
             },
             body: JSON.stringify({
-              model: "openai/gpt-oss-120b",
+              model: "openrouter/free",
               messages: [
                 {
                   role: "system",
@@ -74,9 +78,9 @@ export default {
                     "Reply in the same language as the user. " +
                     "Answer clearly and naturally. " +
                     "If asked who created you, answer: Maziar M.K."
-                }
-              ].concat(messages),
-              temperature: 0.7
+                },
+                ...messages
+              ]
             })
           }
         );
@@ -84,84 +88,61 @@ export default {
         const data = await response.json();
 
         if (!response.ok) {
-          return json(
-            {
-              error:
-                data &&
-                data.error &&
-                data.error.message
-                  ? data.error.message
-                  : "Groq request failed.",
-              status: response.status,
-              details:
-                data && data.error
-                  ? data.error
-                  : null
-            },
-            response.status
-          );
+          return json({
+            error:
+              data?.error?.message ||
+              data?.message ||
+              "OpenRouter request failed.",
+            status: response.status
+          }, response.status);
         }
 
-        const reply =
-          data &&
-          data.choices &&
-          data.choices[0] &&
-          data.choices[0].message &&
-          data.choices[0].message.content;
+        const reply = data?.choices?.[0]?.message?.content;
 
         if (!reply) {
-          return json(
-            { error: "Groq returned an empty response." },
-            502
-          );
+          return json({
+            error: "OpenRouter returned an empty response."
+          }, 502);
         }
 
-        return json({ reply: reply });
+        return json({ reply });
 
       } catch (error) {
-        return json(
-          {
-            error: "Cloudflare Worker error.",
-            details: String(
-              error && error.message
-                ? error.message
-                : error
-            )
-          },
-          500
-        );
+        return json({
+          error: "Worker error.",
+          details: String(error?.message || error)
+        }, 500);
       }
     }
 
     if (request.method === "GET" && url.pathname === "/") {
       const assetRequest = new Request(
-        new URL(
-          "/violet_grok/violet_ai_frontend.html",
-          request.url
-        ),
+        new URL("/violet_grok/violet_ai_frontend.html", request.url),
         request
       );
 
       return env.ASSETS.fetch(assetRequest);
     }
 
-    return new Response("Not Found", {
-      status: 404
-    });
+    return new Response("Not Found", { status: 404 });
   }
 };
 
-function json(data, status) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status: status || 200,
-      headers: {
-        "Content-Type":
-          "application/json; charset=UTF-8",
-        "Cache-Control": "no-store",
-        "Access-Control-Allow-Origin": "*"
-      }
+function corsHeaders() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+  };
+}
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      ...corsHeaders(),
+      "Content-Type": "application/json; charset=UTF-8",
+      "Cache-Control": "no-store"
     }
-  );
+  });
 }
